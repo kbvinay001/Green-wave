@@ -191,6 +191,6 @@ greenwave/
 
 ---
 
-*4th Year Project · Multi-modal Emergency Vehicle Preemption · GCC-PHAT + YOLOv11 + Temporal Belief Fusion*
+*Multi-modal Emergency Vehicle Preemption · GCC-PHAT + YOLOv11 + Temporal Belief Fusion*
 
 *Built with Python 3.12 · PyTorch · Ultralytics · FastAPI · React + Vite*
