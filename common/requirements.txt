@@ -1,0 +1,42 @@
+# Deep Learning
+torch==2.1.2
+torchvision==0.16.2
+torchaudio==2.1.2
+
+# YOLOv11
+ultralytics>=8.2.0
+
+# Audio Processing
+librosa==0.10.1
+soundfile==0.12.1
+numba==0.58.1
+
+# Computer Vision
+opencv-python==4.9.0.80
+Pillow==10.2.0
+
+# Traffic Simulation
+eclipse-sumo==1.19.0
+traci==1.19.0
+
+# Tracking (for vision)
+filterpy==1.4.5
+
+# Scientific Computing
+numpy==1.24.3
+scipy==1.11.4
+pandas==2.1.4
+matplotlib==3.8.2
+seaborn==0.13.1
+
+# Configuration
+pyyaml==6.0.1
+omegaconf==2.3.0
+
+# Utilities
+tqdm==4.66.1
+loguru==0.7.2
+
+# Dashboard
+streamlit==1.30.0
+plotly==5.18.0

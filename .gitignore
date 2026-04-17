@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.env
+.venv
+venv/
+env/
+
+# PyTorch model weights (large binaries -- download separately)
+*.pt
+*.pth
+*.onnx
+*.torchscript
+
+# Training outputs
+audio/data/
+audio/runs/
+vision/data/
+vision/runs/
+outputs/
+
+# Logs
+*.log
+*.csv
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Node
+ui/node_modules/
+ui/dist/
+ui/dist-ssr/
+*.local
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# OS
+desktop.ini
+
+# Secrets
+.env
+*.env
+secrets.yaml
+
+# SUMO
+*.xml.bak

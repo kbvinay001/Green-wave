@@ -1,0 +1,49 @@
+# Green Wave++ Configuration
+
+audio:
+  sample_rate: 16000
+  n_mels: 128
+  n_fft: 1024
+  win_length: 400  # 25 ms at 16kHz
+  hop_length: 160  # 10 ms at 16kHz
+  fmin: 0
+  fmax: 8000
+  window_sec: 1.0
+  hop_sec: 0.1
+  
+  # SpecAugment
+  freq_mask_param: 20
+  time_mask_param: 30
+  
+  # TDOA/Bearing
+  mic_array:
+    positions: [[0.0, 0.0], [0.15, 0.0], [0.075, 0.13]]  # triangle, 15 cm baseline
+  bearing_median_window: 5  # 0.5 s @ 10 Hz
+  
+vision:
+  model: "yolov11s"
+  img_size: 640
+  conf_threshold: 0.4
+  iou_threshold: 0.5
+  classes: ["ambulance", "lightbar"]
+  fps_target: 25
+  
+fusion:
+  decay_factor: 0.92
+  sigma_angle_deg: 20.0
+  arm_threshold: 0.6
+  arm_duration_sec: 0.5
+  preempt_threshold: 0.8
+  preempt_threshold_approaching: 0.7
+  min_visual_speed_kmh: 30.0
+  
+sumo:
+  step_length: 0.1  # 100 ms
+  all_red_duration: 2.5
+  preempt_green_duration: 12.0
+  downstream_lookahead: 3  # intersections
+  
+system:
+  log_dir: "logs"
+  output_dir: "outputs"
+  checkpoint_dir: "checkpoints"
