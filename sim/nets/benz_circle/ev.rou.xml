@@ -1,0 +1,14 @@
+<routes>
+    <!-- The ambulance for Benz Circle scenarios. Route traced by
+         sim/build_corridor.py: MG Road (NW) through Benz Circle onto
+         Vijayawada-Machilipatnam Road (SE), 1.4 km, 4 signals. -->
+    <vType id="ambulance" vClass="emergency" accel="3.0" decel="5.0" length="6.5"
+           maxSpeed="22.0" speedFactor="1.3" guiShape="emergency">
+        <param key="has.bluelight.device" value="true"/>
+    </vType>
+
+    <route id="ev_benz_corridor" edges="1058429866#7 -279067598#18 -279067598#17 342682095#0 342682095#1 279067605#7 279067605#8 350502993#6 350502993#7 350502993#8 350502993#9 350502993#11 350502993#12 350502993#13 350502993#14 350502993#15 219187866#5 219187866#6 219187866#7 374387203#0 374387203#1 374387203#1-AddedOffRampEdge 374387203#4 657054233#1"/>
+
+    <!-- scenarios/tests inject the actual vehicle with their own depart time,
+         e.g. traci.vehicle.add('ev1', 'ev_benz_corridor', typeID='ambulance') -->
+</routes>

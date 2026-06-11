@@ -1,0 +1,18 @@
+<configuration>
+    <input>
+        <net-file value="benz.net.xml"/>
+        <route-files value="background.rou.xml,ev.rou.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <step-length value="0.1"/>
+    </time>
+    <processing>
+        <time-to-teleport value="-1"/>
+        <ignore-route-errors value="true"/>
+    </processing>
+    <report>
+        <no-step-log value="true"/>
+        <duration-log.disable value="true"/>
+    </report>
+</configuration>

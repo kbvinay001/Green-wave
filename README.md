@@ -75,6 +75,38 @@ Inference: **4.8 ms/frame** (≈200 FPS capability — far above the 25 FPS targ
 |---|---|
 | ![PR curve](docs/results/yolo_pr_curve.png) | ![Predictions](docs/results/yolo_val_predictions.jpg) |
 
+### Phase 2 — virtual sensors + a real intersection
+
+The pipeline now replays a video + WAV pair as if they were the live camera and
+microphone (`run.py --virtual`), both paced on one media clock. And instead of a
+toy grid, the green wave runs on **Benz Circle, Vijayawada**: a 1.4 km corridor
+pulled from OpenStreetMap (MG Road → Benz Circle → Bandar Road) with four
+signalized junctions, driven through SUMO/TraCI.
+
+Measured on the real network, audio only (a replayed 15 s siren recording):
+
+| Event | Sim time |
+|---|---|
+| Siren detected, preemption fired | t = 1.9 s |
+| Junction 1 (MG Rd) green | t = 9.9 s (ETA 8.0) |
+| Junction 2 (MG Rd) green | t = 12.9 s (ETA 11.0) |
+| Junction 3 (Bandar Rd) green | t = 15.9 s (ETA 14.0) |
+| Junction 4 (Bandar Rd) green | t = 18.9 s (ETA 17.0) |
+
+Each junction goes green at its own ETA — a rolling wave, not a blanket change —
+and every signal hands back to its normal program after the hold.
+
+> OSM has no traffic-signal tags in this part of Vijayawada, so signals were
+> placed at the four corridor junctions with `netconvert --tls.set`
+> (`sim/build_corridor.py` traces the corridor and picks them). Signal positions
+> are therefore modelled, not surveyed.
+
+```bash
+# replay a siren against the Benz Circle network, watch it in SUMO's GUI
+python run.py --virtual --wav data/virtual_demo/siren_15s.wav \
+              --sumo sim/nets/benz_circle/benz.sumocfg --sumo-gui
+```
+
 ---
 
 ## Development Status
@@ -91,8 +123,9 @@ Inference: **4.8 ms/frame** (≈200 FPS capability — far above the 25 FPS targ
 | Integration pipeline | ✅ Complete | Threaded, async, demo mode |
 | React dashboard | ✅ Complete | Bearing compass, intersection map, event feed |
 | FastAPI WebSocket server | ✅ Complete | /ws, /status, /reset, /beliefs |
-| Virtual sensor mode (video/WAV replay) | 🔄 Phase 2 | `--virtual` flag, time-synchronized |
-| SUMO network (OSM real intersection) | 🔄 Phase 2 | OSM Web Wizard export + TraCI wiring |
+| Virtual sensor mode (video/WAV replay) | ✅ Complete | `run.py --virtual`, one shared media clock, A/V sync tested |
+| Real SUMO TraCI backend | ✅ Complete | Sim-time green cascade, per-approach signal states, program restore |
+| Benz Circle (Vijayawada) network | ✅ Complete | OSM extract → netconvert, 4-signal corridor on MG Rd/Bandar Rd |
 | Fusion logic upgrades | 📋 Phase 3 | Cross-modal gate, Doppler gate, graded arm action |
 | Security hardening | 📋 Phase 4 | API key, WS token, rate limit, hash-chained audit log |
 | Counterfactual evaluation + deploy | 📋 Phase 5 | Paired SUMO runs, docker-compose, Cloudflare tunnel |

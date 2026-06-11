@@ -144,8 +144,9 @@ class EndToEndPipeline:
         self._running  = False
         self._rig      = None
 
-        # Core components
-        self.lanes = [
+        # Lanes come from config when a real intersection is mapped there;
+        # the symmetric 4-way layout stays as the demo fallback.
+        self.lanes = self._lanes_from_config(config) or [
             Lane("approach_north", heading_deg=0.0,   corridor_tls=["J_N1", "J_N2", "J_N3"]),
             Lane("approach_south", heading_deg=180.0, corridor_tls=["J_S1", "J_S2", "J_S3"]),
             Lane("approach_east",  heading_deg=90.0,  corridor_tls=["J_E1", "J_E2"]),
@@ -161,6 +162,18 @@ class EndToEndPipeline:
         self.logger    = E2ELogger()
 
         self._broadcast: Optional[Callable[..., Coroutine]] = None
+
+    @staticmethod
+    def _lanes_from_config(config: dict) -> Optional[List[Lane]]:
+        corridors = config.get("intersection", {}).get("corridors") or []
+        lanes = []
+        for c in corridors:
+            lanes.append(Lane(
+                c["lane_id"],
+                heading_deg=float(c.get("heading_deg", 0.0)),
+                corridor_tls=[t["id"] for t in c["intersections"]],
+            ))
+        return lanes or None
 
     def set_broadcast(self, fn: Callable[..., Coroutine]) -> None:
         """Inject the WebSocket broadcast coroutine from server.py."""
@@ -364,6 +377,8 @@ if __name__ == "__main__":
     ap.add_argument("--virtual", action="store_true", help="file replay sources")
     ap.add_argument("--video",   default=None)
     ap.add_argument("--wav",     default=None)
+    ap.add_argument("--sumo",    default=None, help=".sumocfg -> real TraCI signals")
+    ap.add_argument("--sumo-gui", action="store_true")
     ap.add_argument("--duration", type=float, default=20.0, help="Seconds to run")
     args = ap.parse_args()
 
@@ -371,6 +386,9 @@ if __name__ == "__main__":
         args.demo = True   # standalone default: demo
 
     cfg      = load_config()
+    if args.sumo:
+        cfg["sumo"]["cfg"] = args.sumo
+        cfg["sumo"]["gui"] = args.sumo_gui
     virtual  = {"video": args.video, "wav": args.wav} if args.virtual else None
     pipeline = EndToEndPipeline(cfg, demo=args.demo, virtual=virtual)
     pipeline.start()

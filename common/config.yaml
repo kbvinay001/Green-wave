@@ -77,7 +77,7 @@ sumo:
 virtual:
   video: ""                      # path to video file ("" = no vision source)
   wav: "audio/data/test/sirens/test_siren.wav"
-  camera_lane: "approach_north"  # the approach this (single) camera watches
+  camera_lane: "approach_west"   # the approach this (single) camera watches
   audio_bearing_deg: null        # null = use camera_lane's heading; or fixed degrees
   speed: 1.0                     # playback speed multiplier
   loop: false                    # restart sources when files end
@@ -87,6 +87,21 @@ virtual:
   default_speed_kmh: 50.0        # used when tracker speed is unavailable
   pixels_per_meter: 10.0         # tracker speed calibration (rough)
   
+# Real intersection: Benz Circle, Vijayawada (OSM extract, see sim/nets/benz_circle).
+# The ambulance approaches from the west on MG Road and exits SE on Bandar Road.
+# Junction ids come from netconvert; distances are along the traced route.
+# OSM has no signal tags here, so signals were forced at these four junctions
+# with netconvert --tls.set (see sim/build_corridor.py output).
+intersection:
+  corridors:
+    - lane_id: approach_west
+      heading_deg: 270
+      intersections:
+        - {id: "cluster_2833253614_4649948643", distance_m: 585,  approach_edge: "279067605#8"}
+        - {id: "cluster_3496483757_4461930878", distance_m: 743,  approach_edge: "350502993#11"}
+        - {id: "cluster_3777691603_3777721158", distance_m: 969,  approach_edge: "374387203#0"}
+        - {id: "cluster_6154156987_9647693957", distance_m: 1416, approach_edge: "657054233#1"}
+
 system:
   log_dir: "logs"
   output_dir: "outputs"
