@@ -153,7 +153,11 @@ class EndToEndPipeline:
         ]
         self.fusion    = TemporalFusionEngine(self.lanes, config)
         self.predictor = RoutePredictor(config=config)
-        self.sumo      = SumoController(config, mock=True)
+        # real SUMO when a .sumocfg is configured, mock state machine otherwise
+        sumo_cfg = config.get("sumo", {}).get("cfg") or None
+        self.sumo = SumoController(config, sumo_cfg=sumo_cfg,
+                                   mock=not sumo_cfg,
+                                   gui=bool(config.get("sumo", {}).get("gui")))
         self.logger    = E2ELogger()
 
         self._broadcast: Optional[Callable[..., Coroutine]] = None
@@ -168,6 +172,7 @@ class EndToEndPipeline:
 
     def start(self) -> None:
         self._running = True
+        self.sumo.start()   # launches SUMO when configured; no-op in mock
         if self.demo:
             self._audio_src  = _DemoAudio()
             self._vision_src = _DemoVision()
@@ -268,6 +273,9 @@ class EndToEndPipeline:
             while not self._q_vision.empty():
                 dets, _ = self._q_vision.get_nowait()
                 vision_dets.extend(dets)
+
+            # Keep the simulation moving (one 100ms step per tick; no-op in mock)
+            self.sumo.step()
 
             # Fusion tick
             commands: List[FusionCommand] = self.fusion.update(

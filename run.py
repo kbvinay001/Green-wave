@@ -46,6 +46,10 @@ def parse_args() -> argparse.Namespace:
                     help="Video file for --virtual (overrides config virtual.video)")
     ap.add_argument("--wav",    default=None,
                     help="WAV file for --virtual (overrides config virtual.wav)")
+    ap.add_argument("--sumo",   default=None, metavar="SUMOCFG",
+                    help="Drive a real SUMO simulation from this .sumocfg")
+    ap.add_argument("--sumo-gui", action="store_true",
+                    help="Open the SUMO GUI window (with --sumo)")
     ap.add_argument("--port",   type=int, default=8000, help="Backend WebSocket port (default 8000)")
     ap.add_argument("--no-ui",  action="store_true",
                     help="Start backend only; skip the Vite dev server")
@@ -96,6 +100,9 @@ def main() -> None:
 
     from integration.pipeline import EndToEndPipeline
     virtual = {"video": args.video, "wav": args.wav} if args.virtual else None
+    if args.sumo:
+        config["sumo"]["cfg"] = args.sumo
+        config["sumo"]["gui"] = args.sumo_gui
     pipeline = EndToEndPipeline(config, demo=args.demo, virtual=virtual)
 
     # Optionally start the Vite dev server

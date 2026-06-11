@@ -1,0 +1,25 @@
+<routes>
+    <!-- Vehicle types -->
+    <vType id="car" vClass="passenger" accel="2.6" decel="4.5" length="4.5"
+           maxSpeed="16.7" sigma="0.5"/>
+    <vType id="ambulance" vClass="emergency" accel="3.0" decel="5.0" length="6.5"
+           maxSpeed="25.0" speedFactor="1.4" guiShape="emergency">
+        <param key="has.bluelight.device" value="true"/>
+    </vType>
+
+    <!-- Cross traffic at each junction keeps the north-south phases busy,
+         so the corridor is NOT trivially green when the EV arrives. -->
+    <flow id="cross_A" type="car" begin="0" end="600" period="6"
+          from="top0A0" to="A0bottom0"/>
+    <flow id="cross_B" type="car" begin="0" end="600" period="5"
+          from="top1B0" to="B0bottom1"/>
+    <flow id="cross_C" type="car" begin="0" end="600" period="6"
+          from="top2C0" to="C0bottom2"/>
+
+    <!-- Light west-east background traffic -->
+    <flow id="we" type="car" begin="0" end="600" period="12"
+          from="left0A0" to="C0right0"/>
+
+    <!-- The ambulance: injected by tests/scenarios with depart time -->
+    <route id="ev_corridor" edges="left0A0 A0B0 B0C0 C0right0"/>
+</routes>

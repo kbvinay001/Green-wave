@@ -2,21 +2,47 @@
 """
 Traffic signal preemption controller -- Green Wave++
 
-Wraps TraCI to execute the green-wave sequence:
+Executes the green-wave sequence:
   1. All-red clearance (flush conflicting phases)
   2. Green cascade -- each signal clears just before the vehicle arrives
   3. Natural phase plan restored after configurable hold duration
 
-Falls back to MockTLSController (no SUMO/TraCI dependency) when TraCI
-is not importable, so the rest of the pipeline works on any machine.
-Callers don't need to know which backend is active.
+Two backends, same public API:
+
+  MOCK   (default)  In-memory TLS state machine driven by wall-clock daemon
+                    threads.  Used for demos and any machine without SUMO.
+
+  TraCI             Real SUMO control.  TraCI simulation time only advances
+                    on simulationStep(), so the cascade is NOT slept through
+                    wall-clock: trigger_preemption() builds a schedule in
+                    SIMULATION time and step() applies whatever is due.
+
+                    Signals are commanded with setRedYellowGreenState using
+                    each junction's controlled-link list: links whose inbound
+                    edge is the EV approach get 'G', everything else 'r'.
+                    The original signal program is restored afterwards via
+                    setProgram, so normal operation resumes automatically.
+
+Approach edges come from config:
+    intersection:
+      corridors:
+        - lane_id: approach_north
+          intersections:
+            - {id: J_N1, distance_m: 0,   approach_edge: edgeIntoJ_N1}
+            - {id: J_N2, distance_m: 100, approach_edge: edgeIntoJ_N2}
+
+A TLS without a known approach_edge falls back to all-red + restore (safe
+clearance, no green wave) and logs a warning once.
 """
 
 from __future__ import annotations
 
+import heapq
+import os
 import threading
 import time
 from enum import Enum
+from pathlib import Path
 from typing import Dict, List, Optional
 
 
@@ -59,32 +85,39 @@ class MockTLSController:
 
 class SumoController:
     """
-    Green-wave controller.  Transparently uses TraCI when available, otherwise
-    falls back to the mock controller.
+    Green-wave controller.  Mock backend unless a SUMO config is supplied
+    (and TraCI imports), in which case real signals are commanded.
 
-    The preemption sequence runs in a daemon thread so the fusion loop
-    (caller) is never blocked by the all-red sleep or green hold.
-
-    Simultaneous preemptions on different approaches are allowed; each
-    runs its own sequence thread.
+    Mock mode: sequences run in daemon threads (wall-clock).
+    TraCI mode: sequences are scheduled in sim time; call step() each tick.
     """
 
-    def __init__(self, config: dict, sumo_cfg: Optional[str] = None, mock: bool = False):
+    def __init__(self, config: dict, sumo_cfg: Optional[str] = None,
+                 mock: bool = False, gui: bool = False):
         sc = config["sumo"]
         self._step_s       = float(sc["step_length"])
         self._all_red_s    = float(sc["all_red_duration"])
         self._green_hold_s = float(sc["preempt_green_duration"])
+        self._gui          = gui
+        self._sumo_cfg     = sumo_cfg or sc.get("cfg") or None
+
+        # tls_id -> inbound approach edge (per corridor config)
+        self._approach_edge: Dict[str, str] = {}
+        for corridor in config.get("intersection", {}).get("corridors", []):
+            for t in corridor.get("intersections", []):
+                if t.get("approach_edge"):
+                    self._approach_edge[t["id"]] = t["approach_edge"]
 
         # Try TraCI unless caller forces mock
         self._traci = None
         self._mock  = True
-        if not mock:
+        if not mock and self._sumo_cfg:
             try:
                 import traci
                 self._traci = traci
                 self._mock  = False
             except ImportError:
-                pass
+                print("[WARN] traci not importable -- falling back to mock")
 
         all_tls = self._collect_tls_ids(config)
         self._mock_ctrl = MockTLSController(all_tls)
@@ -92,16 +125,29 @@ class SumoController:
         self._active: Dict[str, float] = {}   # lane_id -> activation timestamp
         self._lock = threading.Lock()
 
-        print(f"[OK] SumoController ready  ({'mock' if self._mock else 'TraCI'} backend)")
+        # TraCI scheduling state
+        self._schedule: list = []              # heap of (sim_time, seq, fn)
+        self._seq = 0
+        self._saved_programs: Dict[str, str] = {}
+        self._warned_no_edge: set = set()
+
+        print(f"[OK] SumoController ready  ({'mock' if self._mock else 'TraCI'} backend"
+              f"{', cfg=' + str(self._sumo_cfg) if not self._mock else ''})")
 
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
 
     def start(self, sumo_cfg: Optional[str] = None) -> None:
-        if self._mock or self._traci is None or not sumo_cfg:
+        """Launch SUMO and connect TraCI (no-op in mock mode)."""
+        if self._mock or self._traci is None:
             return
-        self._traci.start(["sumo", "-c", sumo_cfg, "--step-length", str(self._step_s)])
+        cfg = sumo_cfg or self._sumo_cfg
+        binary = self._sumo_binary()
+        self._traci.start([binary, "-c", str(cfg),
+                           "--step-length", str(self._step_s),
+                           "--quit-on-end", "true"])
+        print(f"[OK] SUMO started: {Path(cfg).name} ({Path(binary).stem})")
 
     def stop(self) -> None:
         if not self._mock and self._traci is not None:
@@ -111,9 +157,39 @@ class SumoController:
                 pass
 
     def step(self) -> None:
-        """Advance the simulation by one step (SUMO only; no-op in mock)."""
-        if not self._mock and self._traci is not None:
-            self._traci.simulationStep()
+        """Advance one sim step and apply due preemption actions (TraCI)."""
+        if self._mock or self._traci is None:
+            return
+        self._traci.simulationStep()
+        now = self._traci.simulation.getTime()
+
+        # Pop everything that's due first, run it after dropping the lock.
+        # finish() takes the lock again via release(), and a plain Lock
+        # deadlocks if we're still holding it here.
+        due = []
+        with self._lock:
+            while self._schedule and self._schedule[0][0] <= now:
+                _, _, fn = heapq.heappop(self._schedule)
+                due.append(fn)
+        for fn in due:
+            try:
+                fn()
+            except Exception as e:
+                print(f"  [WARN] scheduled TLS action failed: {e}")
+
+    def sim_time(self) -> float:
+        if self._mock or self._traci is None:
+            return time.time()
+        return float(self._traci.simulation.getTime())
+
+    def _sumo_binary(self) -> str:
+        name = "sumo-gui" if self._gui else "sumo"
+        home = os.environ.get("SUMO_HOME", "")
+        for cand in (Path(home) / "bin" / f"{name}.exe",
+                     Path(home) / "bin" / name):
+            if cand.exists():
+                return str(cand)
+        return name   # hope it's in PATH
 
     # ------------------------------------------------------------------
     # Preemption API
@@ -127,7 +203,8 @@ class SumoController:
     ) -> None:
         """
         Fire the green-wave sequence for a corridor.
-        Safe to call from any thread; sequence runs in a daemon thread.
+        Mock: daemon thread with wall-clock sleeps.
+        TraCI: actions scheduled in simulation time, applied by step().
         Duplicate calls for the same lane while active are ignored.
         """
         with self._lock:
@@ -135,13 +212,16 @@ class SumoController:
                 return
             self._active[lane_id] = time.time()
 
-        t = threading.Thread(
-            target=self._sequence,
-            args=(lane_id, corridor_tls, eta_seconds),
-            daemon=True,
-            name=f"preempt-{lane_id}",
-        )
-        t.start()
+        if self._mock or self._traci is None:
+            t = threading.Thread(
+                target=self._sequence_mock,
+                args=(lane_id, corridor_tls, eta_seconds),
+                daemon=True,
+                name=f"preempt-{lane_id}",
+            )
+            t.start()
+        else:
+            self._schedule_traci(lane_id, corridor_tls, eta_seconds)
 
     def release(self, lane_id: str) -> None:
         """Manually release a preemption (e.g. vehicle cancelled or passed early)."""
@@ -152,37 +232,57 @@ class SumoController:
         with self._lock:
             return lane_id in self._active
 
+    # ------------------------------------------------------------------
+    # State reporting (dashboard)
+    # ------------------------------------------------------------------
+
     def get_tls_states(self) -> Dict[str, str]:
         if self._mock:
             return self._mock_ctrl.get_all_states()
 
         states: Dict[str, str] = {}
-        if self._traci is not None:
-            try:
-                for tls_id in self._traci.trafficlight.getIDList():
-                    # Phase indices vary by network; even=green is the common convention
-                    idx = self._traci.trafficlight.getPhase(tls_id)
-                    states[tls_id] = "green" if idx % 2 == 0 else "red"
-            except Exception:
-                pass
+        if self._traci is None:
+            return states
+        try:
+            for tls_id in self._traci.trafficlight.getIDList():
+                state = self._traci.trafficlight.getRedYellowGreenState(tls_id)
+                edge = self._approach_edge.get(tls_id)
+                if edge:
+                    states[tls_id] = self._approach_color(tls_id, state, edge)
+                else:
+                    # majority colour as a coarse dashboard signal
+                    g = sum(c in "Gg" for c in state)
+                    y = sum(c in "Yy" for c in state)
+                    states[tls_id] = ("green" if g >= len(state) / 2
+                                      else "yellow" if y > 0 else "red")
+        except Exception:
+            pass
         return states
 
+    def _approach_color(self, tls_id: str, state: str, edge: str) -> str:
+        """Colour of the signal controlling the EV approach edge."""
+        try:
+            links = self._traci.trafficlight.getControlledLinks(tls_id)
+            for idx, group in enumerate(links):
+                for (in_lane, _out, _via) in group:
+                    if in_lane.rsplit("_", 1)[0] == edge:
+                        c = state[idx]
+                        return ("green" if c in "Gg"
+                                else "yellow" if c in "Yy" else "red")
+        except Exception:
+            pass
+        return "red"
+
     # ------------------------------------------------------------------
-    # Sequence (runs in background thread)
+    # Mock sequence (wall-clock, daemon thread)
     # ------------------------------------------------------------------
 
-    def _sequence(self, lane_id: str, corridor_tls: List[str], eta_seconds: List[float]) -> None:
-        """
-        Full preemption sequence:
-          1. All TLS in corridor -> red (clearance)
-          2. Per-signal green at each ETA (minus clearance time already elapsed)
-          3. Hold configured duration, then restore red and release lock
-        """
+    def _sequence_mock(self, lane_id: str, corridor_tls: List[str],
+                       eta_seconds: List[float]) -> None:
         print(f"[!!] Preemption: {lane_id} -> {corridor_tls}")
 
-        # All-red clearance
         for tls_id in corridor_tls:
-            self._set(tls_id, TLSPhase.RED)
+            self._mock_ctrl.set_phase(tls_id, TLSPhase.RED)
         time.sleep(self._all_red_s)
         elapsed = self._all_red_s
 
@@ -193,32 +293,106 @@ class SumoController:
             if remaining > 0:
                 time.sleep(remaining)
                 elapsed += remaining
-            self._set(tls_id, TLSPhase.GREEN)
+            self._mock_ctrl.set_phase(tls_id, TLSPhase.GREEN)
             print(f"   [GREEN] {tls_id} -> green  (t+{elapsed:.1f}s)")
 
-        # Hold green
         time.sleep(self._green_hold_s)
 
-        # Restore
         for tls_id in corridor_tls:
-            self._set(tls_id, TLSPhase.RED)
+            self._mock_ctrl.set_phase(tls_id, TLSPhase.RED)
 
         self.release(lane_id)
         print(f"[OK] Preemption complete: {lane_id}")
 
     # ------------------------------------------------------------------
+    # TraCI sequence (sim-time scheduled, applied in step())
+    # ------------------------------------------------------------------
 
-    def _set(self, tls_id: str, phase: TLSPhase) -> None:
-        if self._mock:
-            self._mock_ctrl.set_phase(tls_id, phase)
-            return
-        if self._traci is None:
-            return
-        try:
-            idx = {TLSPhase.GREEN: 0, TLSPhase.YELLOW: 1, TLSPhase.RED: 2}[phase]
-            self._traci.trafficlight.setPhase(tls_id, idx)
-        except Exception as e:
-            print(f"  [WARN] TraCI set {tls_id}: {e}")
+    def _schedule_traci(self, lane_id: str, corridor_tls: List[str],
+                        eta_seconds: List[float]) -> None:
+        now = self._traci.simulation.getTime()
+        print(f"[!!] Preemption (sim t={now:.1f}s): {lane_id} -> {corridor_tls}")
+
+        # Remember original programs (once per TLS, restored at the end)
+        for tls_id in corridor_tls:
+            if tls_id not in self._saved_programs:
+                try:
+                    self._saved_programs[tls_id] = \
+                        self._traci.trafficlight.getProgram(tls_id)
+                except Exception:
+                    self._saved_programs[tls_id] = "0"
+
+        def all_red(tls_id: str):
+            def fn():
+                n = len(self._traci.trafficlight.getRedYellowGreenState(tls_id))
+                self._traci.trafficlight.setRedYellowGreenState(tls_id, "r" * n)
+            return fn
+
+        def green_wave(tls_id: str):
+            def fn():
+                state = self._green_state_for(tls_id)
+                if state is None:
+                    if tls_id not in self._warned_no_edge:
+                        self._warned_no_edge.add(tls_id)
+                        print(f"  [WARN] {tls_id}: no approach_edge in config -- "
+                              f"holding all-red instead of green wave")
+                    return
+                self._traci.trafficlight.setRedYellowGreenState(tls_id, state)
+                print(f"   [GREEN] {tls_id} -> EV approach green "
+                      f"(sim t={self._traci.simulation.getTime():.1f}s)")
+            return fn
+
+        def restore(tls_id: str):
+            def fn():
+                prog = self._saved_programs.get(tls_id, "0")
+                try:
+                    self._traci.trafficlight.setProgram(tls_id, prog)
+                except Exception as e:
+                    print(f"  [WARN] restore {tls_id}: {e}")
+            return fn
+
+        def finish():
+            self.release(lane_id)
+            print(f"[OK] Preemption complete: {lane_id} "
+                  f"(sim t={self._traci.simulation.getTime():.1f}s)")
+
+        with self._lock:
+            # 1. immediate all-red clearance on the whole corridor
+            for tls_id in corridor_tls:
+                self._push(now, all_red(tls_id))
+            # 2. each TLS turns green at its own ETA (never before clearance ends)
+            last_green = now
+            for idx, tls_id in enumerate(corridor_tls):
+                eta = eta_seconds[idx] if idx < len(eta_seconds) else 0.0
+                t_green = now + max(eta, self._all_red_s)
+                last_green = max(last_green, t_green)
+                self._push(t_green, green_wave(tls_id))
+            # 3. hold, then restore the normal plans
+            t_restore = last_green + self._green_hold_s
+            for tls_id in corridor_tls:
+                self._push(t_restore, restore(tls_id))
+            self._push(t_restore, finish)
+
+    def _push(self, sim_time: float, fn) -> None:
+        self._seq += 1
+        heapq.heappush(self._schedule, (sim_time, self._seq, fn))
+
+    def _green_state_for(self, tls_id: str) -> Optional[str]:
+        """State string: 'G' on links fed by the EV approach edge, 'r' elsewhere."""
+        edge = self._approach_edge.get(tls_id)
+        if not edge:
+            return None
+        links = self._traci.trafficlight.getControlledLinks(tls_id)
+        chars = []
+        hit = False
+        for group in links:
+            green = any(in_lane.rsplit("_", 1)[0] == edge
+                        for (in_lane, _out, _via) in group)
+            hit = hit or green
+            chars.append("G" if green else "r")
+        return "".join(chars) if hit else None
+
+    # ------------------------------------------------------------------
 
     def _collect_tls_ids(self, config: dict) -> List[str]:
         ids: List[str] = []
@@ -233,7 +407,7 @@ class SumoController:
 
 
 # ---------------------------------------------------------------------------
-# Self-test
+# Self-test (mock backend)
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":

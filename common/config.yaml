@@ -69,6 +69,8 @@ sumo:
   all_red_duration: 2.5
   preempt_green_duration: 12.0
   downstream_lookahead: 3  # intersections
+  cfg: ""        # path to a .sumocfg -> real TraCI control; empty = mock signals
+  gui: false     # open the SUMO window when cfg is set
 
 # Virtual sensor mode (run.py --virtual): replay a video + WAV as if they
 # were the live camera + microphone, time-synchronized on one media clock.
