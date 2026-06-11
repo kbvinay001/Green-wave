@@ -223,6 +223,34 @@ class SumoController:
         else:
             self._schedule_traci(lane_id, corridor_tls, eta_seconds)
 
+    def extend_green(self, tls_id: str, seconds: float = 5.0) -> bool:
+        """
+        Graded action at arm: if the EV approach is currently green, stretch
+        that green by a few seconds. If it's red we do nothing -- there is no
+        green to extend, and forcing one is the full preemption's job.
+        Returns True when an extension was actually applied.
+        """
+        if self._mock or self._traci is None:
+            if self._mock_ctrl.get_phase(tls_id) == TLSPhase.GREEN:
+                print(f"  [ARM ] {tls_id}: green extended +{seconds:.0f}s (mock)")
+                return True
+            return False
+
+        try:
+            edge = self._approach_edge.get(tls_id)
+            state = self._traci.trafficlight.getRedYellowGreenState(tls_id)
+            if edge and self._approach_color(tls_id, state, edge) != "green":
+                return False
+            now = self._traci.simulation.getTime()
+            remaining = self._traci.trafficlight.getNextSwitch(tls_id) - now
+            self._traci.trafficlight.setPhaseDuration(tls_id, remaining + seconds)
+            print(f"  [ARM ] {tls_id}: green extended +{seconds:.0f}s "
+                  f"(sim t={now:.1f}s)")
+            return True
+        except Exception as e:
+            print(f"  [WARN] extend_green {tls_id}: {e}")
+            return False
+
     def release(self, lane_id: str) -> None:
         """Manually release a preemption (e.g. vehicle cancelled or passed early)."""
         with self._lock:

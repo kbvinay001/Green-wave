@@ -107,6 +107,28 @@ python run.py --virtual --wav data/virtual_demo/siren_15s.wav \
               --sumo sim/nets/benz_circle/benz.sumocfg --sumo-gui
 ```
 
+### Phase 3 — trust gates and graded response
+
+The fusion engine no longer treats a loud siren as proof. Three safeguards,
+each unit-tested and demonstrated on the Benz Circle network:
+
+- **Cross-modal gate** — audio alone caps belief at 0.7, below the 0.8
+  preemption threshold. The same 15s siren replay that used to fire a full
+  green wave now holds at `0.700 [ARMED]` for its entire duration and never
+  preempts; one camera confirmation within 3s lifts the cap.
+- **Doppler gate** — a receding siren (falling pitch trend) has its belief
+  contribution multiplied by 0.3. Sirens sweep by design, so the detector
+  tracks the sweep's upper envelope per half-second block instead of raw
+  pitch — a wail oscillating ±300 Hz/s with no drift stays "approaching".
+- **Graded action** — the instant a lane arms (belief ≥ 0.6), the nearest
+  corridor signal's current green is stretched 5s: a cheap, reversible first
+  move while the system waits for visual confirmation.
+
+Also fixed in this phase: cascade ETAs now come from the mapped corridor
+geometry (0/158/384/831m on Benz Circle) instead of a hard-coded 30m
+junction spacing — the far junction's green arrives when the ambulance
+does, not 50 seconds early.
+
 ---
 
 ## Development Status
@@ -126,7 +148,10 @@ python run.py --virtual --wav data/virtual_demo/siren_15s.wav \
 | Virtual sensor mode (video/WAV replay) | ✅ Complete | `run.py --virtual`, one shared media clock, A/V sync tested |
 | Real SUMO TraCI backend | ✅ Complete | Sim-time green cascade, per-approach signal states, program restore |
 | Benz Circle (Vijayawada) network | ✅ Complete | OSM extract → netconvert, 4-signal corridor on MG Rd/Bandar Rd |
-| Fusion logic upgrades | 📋 Phase 3 | Cross-modal gate, Doppler gate, graded arm action |
+| Cross-modal gate | ✅ Complete | Audio-only belief caps at 0.7; preemption needs camera confirmation |
+| Doppler gate | ✅ Complete | Receding sirens (falling pitch envelope) weighted ×0.3 |
+| Graded arm action | ✅ Complete | Belief ≥0.6 stretches the nearest green +5s before full preemption |
+| ETA-true green cascade | ✅ Complete | ETAs from mapped corridor distances, verified per-TLS in SUMO |
 | Security hardening | 📋 Phase 4 | API key, WS token, rate limit, hash-chained audit log |
 | Counterfactual evaluation + deploy | 📋 Phase 5 | Paired SUMO runs, docker-compose, Cloudflare tunnel |
 

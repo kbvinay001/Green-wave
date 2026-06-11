@@ -50,6 +50,7 @@ class E2ELogger:
 
         self._session_ts = time.time()
         self._preempts:  List[PreemptEvent] = []
+        self._events:    List[dict] = []     # anything that isn't a preemption
         self._n_frames   = 0
         self._sum_audio  = 0.0
         self._sum_vision = 0
@@ -70,6 +71,11 @@ class E2ELogger:
         # Flush every 50 frames to keep OS write load low
         if self._n_frames % 50 == 0:
             self._csv_f.flush()
+
+    def log_event(self, kind: str, data: dict) -> None:
+        """Free-form session event (arm extensions, gate decisions, ...)."""
+        self._events.append({"timestamp": round(time.time(), 3),
+                             "kind": kind, **data})
 
     def log_preempt(self, cmd: "FusionCommand") -> None:
         evt = PreemptEvent(
@@ -99,6 +105,7 @@ class E2ELogger:
             "avg_vision_detections_per_frame":   round(self._sum_vision / n, 3),
             "preempt_count":                     len(self._preempts),
             "preempt_events":                    [asdict(e) for e in self._preempts],
+            "events":                            self._events,
         }
 
         out = self._out / f"session_{int(self._session_ts)}.json"

@@ -44,6 +44,17 @@ audio:
   mic_array:
     positions: [[0.0, 0.0], [0.15, 0.0], [0.075, 0.13]]  # triangle, 15 cm baseline
   bearing_median_window: 5  # 0.5 s @ 10 Hz
+
+  # Doppler gate: a receding siren (falling pitch trend) is weighted down.
+  # Sirens sweep, so we track the max frequency per block (the sweep's upper
+  # envelope) and look at its drift -- not the raw pitch, which oscillates.
+  doppler:
+    enabled: true
+    window_sec: 2.0            # how much history the trend uses
+    block_sec: 0.5             # envelope sample size
+    band_hz: [500, 2500]       # where sirens live
+    falling_slope_hz_per_s: -10.0   # steeper fall than this = receding
+    receding_factor: 0.3       # belief contribution multiplier when receding
   
 vision:
   model: "yolov11s"
@@ -63,6 +74,15 @@ fusion:
   preempt_threshold: 0.8
   preempt_threshold_approaching: 0.7
   min_visual_speed_kmh: 30.0
+  # Cross-modal gate: a siren alone can never fire a full preemption.
+  # Belief stays capped below preempt_threshold until the camera has
+  # confirmed an ambulance on that lane within the last few seconds.
+  audio_only_belief_cap: 0.7
+  vision_confirm_window_sec: 3.0
+  # Graded action: the moment a lane arms (belief crosses arm_threshold),
+  # the nearest corridor signal gets its current green stretched by this
+  # much -- a cheap early move while we wait for full confirmation.
+  arm_green_extension_sec: 5.0
   
 sumo:
   step_length: 0.1  # 100 ms
@@ -89,7 +109,8 @@ virtual:
   
 # Real intersection: Benz Circle, Vijayawada (OSM extract, see sim/nets/benz_circle).
 # The ambulance approaches from the west on MG Road and exits SE on Bandar Road.
-# Junction ids come from netconvert; distances are along the traced route.
+# Junction ids come from netconvert; distance_m is measured from the FIRST
+# corridor junction (RoutePredictor adds the vehicle's distance to that one).
 # OSM has no signal tags here, so signals were forced at these four junctions
 # with netconvert --tls.set (see sim/build_corridor.py output).
 intersection:
@@ -97,10 +118,10 @@ intersection:
     - lane_id: approach_west
       heading_deg: 270
       intersections:
-        - {id: "cluster_2833253614_4649948643", distance_m: 585,  approach_edge: "279067605#8"}
-        - {id: "cluster_3496483757_4461930878", distance_m: 743,  approach_edge: "350502993#11"}
-        - {id: "cluster_3777691603_3777721158", distance_m: 969,  approach_edge: "374387203#0"}
-        - {id: "cluster_6154156987_9647693957", distance_m: 1416, approach_edge: "657054233#1"}
+        - {id: "cluster_2833253614_4649948643", distance_m: 0,   approach_edge: "279067605#8"}
+        - {id: "cluster_3496483757_4461930878", distance_m: 158, approach_edge: "350502993#11"}
+        - {id: "cluster_3777691603_3777721158", distance_m: 384, approach_edge: "374387203#0"}
+        - {id: "cluster_6154156987_9647693957", distance_m: 831, approach_edge: "657054233#1"}
 
 system:
   log_dir: "logs"

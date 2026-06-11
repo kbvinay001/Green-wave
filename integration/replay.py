@@ -170,7 +170,9 @@ class AudioDetectorAdapter:
                  config_path: Optional[str] = None):
         self.fallback_bearing = float(fallback_bearing_deg)
         self._det = detector            # injected stub in tests
-        self._multichannel = None
+        self._doppler = None
+        self._t_audio = 0.0
+        self._sr = 16000
         if self._det is None:
             cfg = config_path or str(ROOT / "common" / "config.yaml")
             ckpt = model_path or str(ROOT / "checkpoints" / "audio_best.pt")
@@ -178,10 +180,16 @@ class AudioDetectorAdapter:
                 raise FileNotFoundError(
                     f"Audio checkpoint missing: {ckpt}\n  Train first: python audio/train.py")
             sys.path.insert(0, str(ROOT / "audio"))
-            from stream_detector import StreamingDetector
+            from stream_detector import StreamingDetector, DopplerTracker
             from infer import SirenDetector
             self._multi_det = StreamingDetector(model_path=ckpt, config_path=cfg)
             self._mono_det = SirenDetector(model_path=ckpt, config_path=cfg)
+            # mono replay bypasses StreamingDetector, so it gets its own tracker
+            import yaml
+            with open(cfg) as f:
+                full_cfg = yaml.safe_load(f)
+            self._sr = int(full_cfg["audio"]["sample_rate"])
+            self._doppler = DopplerTracker.from_config(full_cfg)
 
     def process(self, channels: List[np.ndarray]) -> dict:
         if self._det is not None:                     # test stub
@@ -191,12 +199,20 @@ class AudioDetectorAdapter:
             return self._multi_det.process_multichannel(channels)
 
         r = self._mono_det.process_chunk(channels[0])
+        self._t_audio += len(channels[0]) / self._sr
         detected = bool(r["detected"])
+
+        doppler = {"doppler_factor": 1.0, "pitch_slope_hz_s": 0.0}
+        if self._doppler is not None:
+            doppler = (self._doppler.update(channels[0], self._t_audio)
+                       if detected else self._doppler.verdict())
+
         return {
             "p_siren": float(r["p_siren"]),
             "detected": detected,
             "bearing_deg": self.fallback_bearing if detected else 0.0,
             "bearing_confidence": 0.8 * float(r["p_siren"]) if detected else 0.0,
+            **doppler,
         }
 
 

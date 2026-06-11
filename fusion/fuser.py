@@ -54,9 +54,13 @@ class FusionCommand:
     """Emitted once when a lane crosses the preemption threshold."""
     target_lane:  str
     corridor_tls: List[str]
-    eta_seconds:  List[float]   # per TLS in corridor
+    eta_seconds:  List[float]   # rough internal estimate; the pipeline
+                                # recomputes against RoutePredictor's real
+                                # corridor distances when speed/distance exist
     belief:       float
     timestamp:    float
+    speed_mps:    Optional[float] = None   # from the last vision detection
+    distance_m:   Optional[float] = None   # distance to the first junction
 
 
 @dataclass
@@ -68,6 +72,7 @@ class LaneState:
     active_since:     Optional[float] = None
     last_speed_mps:   Optional[float] = None   # cached from last vision detection
     last_distance_m:  Optional[float] = None
+    last_vision_time: Optional[float] = None   # when the camera last confirmed this lane
 
 
 # ---------------------------------------------------------------------------
@@ -98,6 +103,17 @@ class TemporalFusionEngine:
         )
         self.min_visual_speed  = float(fc.get("min_visual_speed_kmh", 30.0))
 
+        # Cross-modal gate: without a recent camera confirmation the belief
+        # is capped below the preemption threshold, so audio alone can arm
+        # a lane (and earn the graded green extension) but never fire the
+        # full green wave.
+        self.audio_only_cap    = float(fc.get("audio_only_belief_cap", 0.7))
+        self.vision_window     = float(fc.get("vision_confirm_window_sec", 3.0))
+
+        # Lanes that newly ARMED since the caller last asked. The pipeline
+        # drains this to fire the graded green extension.
+        self.pending_arm_events: List[str] = []
+
         # Audio fusion gain -- tuned so a single bearing hit at σ=0 takes
         # ~4 ticks to cross arm_threshold at full confidence.
         self._audio_gain  = 0.22
@@ -126,9 +142,9 @@ class TemporalFusionEngine:
             self._fuse_audio(audio_conf, audio_bearing)
 
         for det in vision_detections:
-            self._fuse_vision(det)
+            self._fuse_vision(det, timestamp)
 
-        self._clamp_beliefs()
+        self._clamp_beliefs(timestamp)
         return self._evaluate_triggers(timestamp)
 
     def get_beliefs(self) -> Dict[str, float]:
@@ -169,7 +185,7 @@ class TemporalFusionEngine:
             w = self._bearing_weight(bearing, lane.heading_deg)
             self.states[name].belief += conf * w * self._audio_gain
 
-    def _fuse_vision(self, det: dict) -> None:
+    def _fuse_vision(self, det: dict, timestamp: float) -> None:
         lane_id = det.get("lane_id")
         if lane_id not in self.states:
             return
@@ -185,6 +201,9 @@ class TemporalFusionEngine:
         if speed_kmh < self.min_visual_speed:
             return
 
+        # this counts as a camera confirmation for the cross-modal gate
+        state.last_vision_time = timestamp
+
         # Bigger bump when belief is still building; taper off once near threshold
         gain = self._vision_gain if state.belief < self.preempt_threshold_approaching else 0.12
         state.belief += det_conf * gain
@@ -197,9 +216,24 @@ class TemporalFusionEngine:
         if distance_m is not None:
             state.last_distance_m = float(distance_m)
 
-    def _clamp_beliefs(self) -> None:
+    def _clamp_beliefs(self, now: float) -> None:
         for state in self.states.values():
-            state.belief = max(0.0, min(1.0, state.belief))
+            cap = 1.0
+            # no camera confirmation recently -> audio-only cap applies
+            if (state.last_vision_time is None
+                    or now - state.last_vision_time > self.vision_window):
+                cap = self.audio_only_cap
+            state.belief = max(0.0, min(cap, state.belief))
+
+    def vision_confirmed(self, lane_id: str, now: float) -> bool:
+        """True when the camera has seen this lane within the confirm window."""
+        t = self.states[lane_id].last_vision_time
+        return t is not None and now - t <= self.vision_window
+
+    def pop_arm_events(self) -> List[str]:
+        """Lanes that armed since the last call (each arm cycle fires once)."""
+        events, self.pending_arm_events = self.pending_arm_events, []
+        return events
 
     def _evaluate_triggers(self, now: float) -> List[FusionCommand]:
         commands = []
@@ -223,6 +257,7 @@ class TemporalFusionEngine:
                 if state.arm_start is None:
                     state.arm_start = now
                     state.phase = LanePhase.ARMED
+                    self.pending_arm_events.append(name)
 
                 held = now - state.arm_start
                 if held >= self.arm_duration and state.belief >= self.preempt_threshold:
@@ -257,6 +292,8 @@ class TemporalFusionEngine:
             eta_seconds  = etas,
             belief       = round(state.belief, 4),
             timestamp    = now,
+            speed_mps    = state.last_speed_mps,
+            distance_m   = state.last_distance_m,
         )
 
 
@@ -333,10 +370,15 @@ def _self_test():
     print("\nDecay test: no input for 3 seconds")
     engine2 = TemporalFusionEngine(lanes, cfg)
     engine2.update(0.9, 2.0, [], 0.0)
-    print(f"  t=0.0  north={engine2.get_beliefs()['north']:.3f}")
+    b0 = engine2.get_beliefs()["north"]
+    print(f"  t=0.0  north={b0:.3f}")
     engine2.update(0.0, None, [], 3.0)
-    print(f"  t=3.0  north={engine2.get_beliefs()['north']:.3f}")
-    print("PASS: Decay working" if engine2.get_beliefs()["north"] < 0.1 else "FAIL: Decay too slow")
+    b3 = engine2.get_beliefs()["north"]
+    print(f"  t=3.0  north={b3:.3f}")
+    # 3 seconds at decay 0.92/s should leave ~78% of the belief
+    expected = b0 * 0.92 ** 3
+    ok = abs(b3 - expected) < 0.02
+    print(f"{'PASS' if ok else 'FAIL'}: decayed to {b3:.3f} (expected ~{expected:.3f})")
 
 
 if __name__ == "__main__":

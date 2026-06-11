@@ -144,16 +144,18 @@ class EndToEndPipeline:
         self._running  = False
         self._rig      = None
 
-        # Lanes come from config when a real intersection is mapped there;
-        # the symmetric 4-way layout stays as the demo fallback.
-        self.lanes = self._lanes_from_config(config) or [
+        # Lanes come from config when a real intersection is mapped there.
+        # Demo mode always uses the synthetic 4-way world -- its fake sources
+        # talk about approach_north, which a real corridor config won't have.
+        self.lanes = (None if demo else self._lanes_from_config(config)) or [
             Lane("approach_north", heading_deg=0.0,   corridor_tls=["J_N1", "J_N2", "J_N3"]),
             Lane("approach_south", heading_deg=180.0, corridor_tls=["J_S1", "J_S2", "J_S3"]),
             Lane("approach_east",  heading_deg=90.0,  corridor_tls=["J_E1", "J_E2"]),
             Lane("approach_west",  heading_deg=270.0, corridor_tls=["J_W1", "J_W2"]),
         ]
         self.fusion    = TemporalFusionEngine(self.lanes, config)
-        self.predictor = RoutePredictor(config=config)
+        # the predictor must describe the same world as the lanes above
+        self.predictor = RoutePredictor(config=None if demo else config)
         # real SUMO when a .sumocfg is configured, mock state machine otherwise
         sumo_cfg = config.get("sumo", {}).get("cfg") or None
         self.sumo = SumoController(config, sumo_cfg=sumo_cfg,
@@ -274,12 +276,15 @@ class EndToEndPipeline:
             ts = time.time()
 
             # Drain audio -- take only the latest result; discard stale ones
-            audio_conf, audio_bearing = 0.0, None
+            audio_conf, audio_bearing, doppler_factor = 0.0, None, 1.0
             while not self._q_audio.empty():
                 a, _ = self._q_audio.get_nowait()
                 if a.get("detected"):
                     audio_conf    = float(a.get("p_siren", 0.0))
                     audio_bearing = float(a.get("bearing_deg", 0.0))
+                    doppler_factor = float(a.get("doppler_factor", 1.0))
+            # a receding siren still counts, just much less
+            audio_conf *= doppler_factor
 
             # Drain vision -- accumulate all pending detections
             vision_dets: List[dict] = []
@@ -295,14 +300,27 @@ class EndToEndPipeline:
                 audio_conf, audio_bearing, vision_dets, ts
             )
 
+            # Graded action: a lane just armed -> stretch the nearest signal's
+            # current green a little while we wait for full confirmation
+            ext = float(self.config["fusion"].get("arm_green_extension_sec", 5.0))
+            for lane_name in self.fusion.pop_arm_events():
+                lane = self.fusion.lanes.get(lane_name)
+                if lane and lane.corridor_tls and ext > 0:
+                    applied = self.sumo.extend_green(lane.corridor_tls[0], ext)
+                    self.logger.log_event("arm_green_extension", {
+                        "lane": lane_name, "tls": lane.corridor_tls[0],
+                        "seconds": ext, "applied": applied,
+                    })
+
             # Handle new preemptions
             for cmd in commands:
+                tls_ids, etas = resolve_command_etas(self.predictor, cmd)
                 print(
                     f"[!!] PREEMPT  lane={cmd.target_lane}"
                     f"  belief={cmd.belief:.3f}"
-                    f"  ETAs={cmd.eta_seconds}"
+                    f"  ETAs={etas}"
                 )
-                self.sumo.trigger_preemption(cmd.target_lane, cmd.corridor_tls, cmd.eta_seconds)
+                self.sumo.trigger_preemption(cmd.target_lane, tls_ids, etas)
                 self.logger.log_preempt(cmd)
 
             # Frame log
@@ -343,6 +361,23 @@ class EndToEndPipeline:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def resolve_command_etas(predictor, cmd) -> tuple:
+    """
+    Turn a fusion command into (tls_ids, etas) using the route predictor's
+    real corridor distances. The fuser only knows a rough spacing guess, so
+    whenever the command carries the vehicle's speed and distance we redo
+    the math against the mapped geometry. No speed/distance (audio-only
+    preemption is impossible now, but belt and braces) -> keep the guess.
+    """
+    if cmd.speed_mps and cmd.distance_m is not None:
+        resolved = predictor.resolve(cmd.target_lane,
+                                     speed_mps=cmd.speed_mps,
+                                     distance_m=cmd.distance_m)
+        if resolved:
+            return resolved
+    return cmd.corridor_tls, cmd.eta_seconds
+
 
 def _q_put(q: queue.Queue, item) -> None:
     """Non-blocking enqueue; evicts the oldest entry if the queue is full."""
