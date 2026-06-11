@@ -126,22 +126,32 @@ class EndToEndPipeline:
     by run.py).
     """
 
-    def __init__(self, config: dict, demo: bool = False):
-        self.config = config
-        self.demo   = demo
+    def __init__(self, config: dict, demo: bool = False,
+                 virtual: Optional[dict] = None):
+        """
+        Modes (mutually exclusive):
+          demo=True        synthetic sources, no models needed
+          virtual={...}    file replay via integration.replay (keys: video, wav --
+                           empty dict falls back to config['virtual'] defaults)
+          neither          live hardware (mic/camera stubs)
+        """
+        self.config  = config
+        self.demo    = demo
+        self.virtual = virtual
 
         self._q_audio  = queue.Queue(maxsize=_QUEUE_MAX)
         self._q_vision = queue.Queue(maxsize=_QUEUE_MAX)
         self._running  = False
+        self._rig      = None
 
         # Core components
-        lanes = [
+        self.lanes = [
             Lane("approach_north", heading_deg=0.0,   corridor_tls=["J_N1", "J_N2", "J_N3"]),
             Lane("approach_south", heading_deg=180.0, corridor_tls=["J_S1", "J_S2", "J_S3"]),
             Lane("approach_east",  heading_deg=90.0,  corridor_tls=["J_E1", "J_E2"]),
             Lane("approach_west",  heading_deg=270.0, corridor_tls=["J_W1", "J_W2"]),
         ]
-        self.fusion    = TemporalFusionEngine(lanes, config)
+        self.fusion    = TemporalFusionEngine(self.lanes, config)
         self.predictor = RoutePredictor(config=config)
         self.sumo      = SumoController(config, mock=True)
         self.logger    = E2ELogger()
@@ -163,12 +173,27 @@ class EndToEndPipeline:
             self._vision_src = _DemoVision()
             threading.Thread(target=self._audio_thread, daemon=True, name="audio").start()
             threading.Thread(target=self._vision_thread, daemon=True, name="vision").start()
+        elif self.virtual is not None:
+            from integration.replay import build_rig_from_config
+            headings = {l.name: l.heading_deg for l in self.lanes}
+            self._rig = build_rig_from_config(
+                self.config,
+                video=self.virtual.get("video"),
+                wav=self.virtual.get("wav"),
+                lane_headings=headings,
+            )
+            self._rig.start(
+                put_audio=lambda item: _q_put(self._q_audio, item),
+                put_vision=lambda item: _q_put(self._q_vision, item),
+            )
         else:
             threading.Thread(target=self._live_audio,  daemon=True, name="audio").start()
             threading.Thread(target=self._live_vision, daemon=True, name="vision").start()
 
     def stop(self) -> None:
         self._running = False
+        if self._rig is not None:
+            self._rig.stop()
         self.sumo.stop()
         self.logger.save()
 
@@ -327,19 +352,34 @@ if __name__ == "__main__":
     import argparse
 
     ap = argparse.ArgumentParser(description="Run fusion pipeline standalone")
-    ap.add_argument("--demo", action="store_true", default=True)
+    ap.add_argument("--demo",    action="store_true", help="synthetic sources")
+    ap.add_argument("--virtual", action="store_true", help="file replay sources")
+    ap.add_argument("--video",   default=None)
+    ap.add_argument("--wav",     default=None)
     ap.add_argument("--duration", type=float, default=20.0, help="Seconds to run")
     args = ap.parse_args()
 
+    if not args.demo and not args.virtual:
+        args.demo = True   # standalone default: demo
+
     cfg      = load_config()
-    pipeline = EndToEndPipeline(cfg, demo=args.demo)
+    virtual  = {"video": args.video, "wav": args.wav} if args.virtual else None
+    pipeline = EndToEndPipeline(cfg, demo=args.demo, virtual=virtual)
     pipeline.start()
 
     async def _run():
         deadline = time.time() + args.duration
         task = asyncio.create_task(pipeline.run_fusion_loop())
+        t = 0
         while time.time() < deadline:
             await asyncio.sleep(1.0)
+            t += 1
+            beliefs = pipeline.fusion.get_beliefs()
+            phases  = pipeline.fusion.get_phases()
+            top = max(beliefs, key=beliefs.get)
+            bar = "#" * int(beliefs[top] * 30)
+            print(f"  t={t:3d}s  {top:>15s} belief={beliefs[top]:.3f} "
+                  f"[{phases[top]:7s}] |{bar:<30s}|")
         task.cancel()
 
     asyncio.run(_run())

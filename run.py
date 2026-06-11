@@ -40,10 +40,19 @@ def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Green Wave++ launcher")
     ap.add_argument("--demo",   action="store_true",
                     help="Run with synthetic data -- no hardware or trained models needed")
+    ap.add_argument("--virtual", action="store_true",
+                    help="Replay video/WAV files as live sensors (config 'virtual' section)")
+    ap.add_argument("--video",  default=None,
+                    help="Video file for --virtual (overrides config virtual.video)")
+    ap.add_argument("--wav",    default=None,
+                    help="WAV file for --virtual (overrides config virtual.wav)")
     ap.add_argument("--port",   type=int, default=8000, help="Backend WebSocket port (default 8000)")
     ap.add_argument("--no-ui",  action="store_true",
                     help="Start backend only; skip the Vite dev server")
-    return ap.parse_args()
+    args = ap.parse_args()
+    if args.demo and args.virtual:
+        ap.error("--demo and --virtual are mutually exclusive")
+    return args
 
 
 def load_config() -> dict:
@@ -86,7 +95,8 @@ def main() -> None:
     config = load_config()
 
     from integration.pipeline import EndToEndPipeline
-    pipeline = EndToEndPipeline(config, demo=args.demo)
+    virtual = {"video": args.video, "wav": args.wav} if args.virtual else None
+    pipeline = EndToEndPipeline(config, demo=args.demo, virtual=virtual)
 
     # Optionally start the Vite dev server
     vite_proc = None
@@ -105,7 +115,9 @@ def main() -> None:
         else:
             print("[WARN] ui/node_modules missing -- run: cd greenwave/ui && npm install")
 
-    mode = "DEMO (synthetic)" if args.demo else "LIVE"
+    mode = ("DEMO (synthetic)" if args.demo
+            else "VIRTUAL (file replay)" if args.virtual
+            else "LIVE")
     print(f"[>>] Green Wave++  |  backend -> http://localhost:{args.port}  |  mode={mode}")
     print("   Press Ctrl-C to stop\n")
 

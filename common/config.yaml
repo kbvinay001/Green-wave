@@ -69,6 +69,21 @@ sumo:
   all_red_duration: 2.5
   preempt_green_duration: 12.0
   downstream_lookahead: 3  # intersections
+
+# Virtual sensor mode (run.py --virtual): replay a video + WAV as if they
+# were the live camera + microphone, time-synchronized on one media clock.
+virtual:
+  video: ""                      # path to video file ("" = no vision source)
+  wav: "audio/data/test/sirens/test_siren.wav"
+  camera_lane: "approach_north"  # the approach this (single) camera watches
+  audio_bearing_deg: null        # null = use camera_lane's heading; or fixed degrees
+  speed: 1.0                     # playback speed multiplier
+  loop: false                    # restart sources when files end
+  # A monocular uncalibrated camera cannot measure speed/distance reliably;
+  # these defaults stand in when the pixel tracker has no answer yet.
+  assume_approaching: true       # count detections without velocity history
+  default_speed_kmh: 50.0        # used when tracker speed is unavailable
+  pixels_per_meter: 10.0         # tracker speed calibration (rough)
   
 system:
   log_dir: "logs"
