@@ -10,6 +10,31 @@ audio:
   fmax: 8000
   window_sec: 1.0
   hop_sec: 0.1
+
+  # Real-data ingestion (audio/prepare_real_data.py)
+  real_data:
+    root: "audio/data/real"
+    window_sec: 3.0          # training window length
+    window_hop_sec: 1.5      # stride between windows within one recording
+    min_rms_dbfs: -45.0      # discard near-silent windows
+    val_fraction: 0.15       # source-recording-level split (no window leakage)
+    seed: 42
+    max_windows_per_origin: 8     # cap windows per source recording (diversity)
+    max_neg_per_pos: 1.5          # cap negative:positive window ratio
+    urbansound_negative_classes: [car_horn, drilling, engine_idling, street_music]
+    sources:
+      evss:      # Emergency Vehicle Siren Sounds (Kaggle, CC0)
+        url: "https://www.kaggle.com/api/v1/datasets/download/vishnu0399/emergency-vehicle-siren-sounds"
+        archive: "evss.zip"
+      sirennet:  # sireNNet (Mendeley j4ydzzv4kb v1, CC BY 4.0)
+        url: "https://data.mendeley.com/public-files/datasets/j4ydzzv4kb/files/486fe1d9-9e0f-44cd-8ed9-aafaee2ebcac/file_downloaded"
+        archive: "sirennet.zip"
+      lssiren:   # LSSiren - Large-Scale Emergency Vehicle Siren + Road Noise (figshare 17560865 -> Google Drive)
+        gdrive_folder: "1_frynXRNmlB7_HwmSV6UDIIYXF2PSULu"
+        archive: "lssiren"  # downloaded as a folder via gdown
+      urbansound8k:  # UrbanSound8K (Zenodo 1203745, CC BY-NC)
+        url: "https://zenodo.org/record/1203745/files/UrbanSound8K.tar.gz?download=1"
+        archive: "UrbanSound8K.tar.gz"
   
   # SpecAugment
   freq_mask_param: 20
@@ -22,10 +47,12 @@ audio:
   
 vision:
   model: "yolov11s"
+  weights: "vision/weights/yolov11s-ambulance.pt"
+  dataset_yaml: "vision/ambulance.yaml"
   img_size: 640
   conf_threshold: 0.4
   iou_threshold: 0.5
-  classes: ["ambulance", "lightbar"]
+  classes: ["ambulance"]   # dataset labels contain only class 0
   fps_target: 25
   
 fusion:

@@ -1,69 +1,112 @@
+#!/usr/bin/env python3
+"""
+Evaluation runner -- Green Wave++
+
+Scans outputs/e2e_logs/ for all session_*.json files produced by real runs,
+pairs each with its frames_*.csv, then prints and saves the three output
+metrics: wait-time reduction %, throughput improvement %, and
+detection-to-preempt latency.
+
+Usage:
+    python -m evaluation.runner
+    python evaluation/runner.py
+"""
+
+from __future__ import annotations
+
+import json
+import re
 from pathlib import Path
-from evaluation.metrics import MetricsCollector
-from evaluation.ablation import AblationMode
-import pandas as pd
 
-def main():
-    print("[>>] Starting Evaluation Runner")
+from evaluation.metrics import MetricsCollector, SessionMetrics
 
-    # Initialize the collector (used only for computation)
-    metrics = MetricsCollector("evaluation/results")
 
-    # Manually collect all results here
-    results = []
+LOGS_DIR = Path("outputs/e2e_logs")
 
-    scenarios = [
-        {
-            "name": "day_clear",
-            "frame_log": "outputs/e2e_logs/sample_frames.csv",
-        }
-    ]
 
-    ablations = [
-        AblationMode.FULL_FUSION,
-        AblationMode.AUDIO_ONLY,
-        AblationMode.VISION_ONLY
-    ]
+def _find_pairs() -> list[tuple[Path, Path | None]]:
+    """
+    Returns (session_json, frames_csv | None) pairs for every session
+    that contains at least one preemption event (preempt_count >= 1).
+    """
+    pairs = []
+    for session_path in sorted(LOGS_DIR.glob("session_*.json")):
+        data = json.loads(session_path.read_text())
+        if data.get("preempt_count", 0) < 1:
+            continue   # skip sessions with no preemptions
 
-    for scenario in scenarios:
-        for mode in ablations:
-            print(f"\n▶ Running {scenario['name']} | Mode: {mode.value}")
+        # Match the epoch-based timestamp in the filename
+        m = re.search(r"session_(\d+)\.json", session_path.name)
+        frames_path = None
+        if m:
+            ts_str = m.group(1)
+            candidate = LOGS_DIR / f"frames_{ts_str}.csv"
+            if candidate.exists():
+                frames_path = candidate
 
-            frame_log_path = Path(scenario["frame_log"])
-            if not frame_log_path.exists():
-                print("[WARN]️ Missing frame log, skipping.")
-                continue
+        pairs.append((session_path, frames_path))
+    return pairs
 
-            result = metrics.compute_metrics(
-                frame_log_path=str(frame_log_path),
-                scenario_name=scenario["name"],
-                config_name=mode.value
-            )
 
-            print(f"[DONE] Done: {result}")
+def main() -> None:
+    print("\n[>>] Green Wave++ Evaluation Runner")
+    print(f"     Scanning: {LOGS_DIR.resolve()}\n")
 
-            # Collect the result manually
-            results.append(result)
+    if not LOGS_DIR.exists():
+        print("[WARN] No logs directory found. Run the pipeline first with --demo flag.")
+        return
 
-    print("\n🎉 Evaluation completed successfully!")
+    collector = MetricsCollector("evaluation/results")
+    pairs     = _find_pairs()
 
-    # --------------------------------------------------------------------------
-    # Save collected results to CSV
-    # --------------------------------------------------------------------------
-    if results:
-        # Convert list of ScenarioMetrics dataclasses to DataFrame
-        df = pd.DataFrame([vars(r) for r in results])
+    if not pairs:
+        print("[WARN] No session logs with preemption events found.")
+        print("       Run:  python run.py --demo --no-ui")
+        print("       Then re-run this script.")
+        return
 
-        output_dir = Path("evaluation/results")
-        output_dir.mkdir(parents=True, exist_ok=True)
+    results: list[SessionMetrics] = []
 
-        csv_path = output_dir / "results.csv"  # or "quick_test.csv" if you prefer
-        df.to_csv(csv_path, index=False)
+    for session_path, frames_path in pairs:
+        print(f"[+] {session_path.name}", end="")
+        if frames_path:
+            print(f"  +  {frames_path.name}")
+        else:
+            print("  (no frame log -- latency N/A)")
 
-        print(f"[DONE] Results saved to CSV: {csv_path}")
-        print(f"   -> {len(df)} rows | Columns: {list(df.columns)}")
-    else:
-        print("[WARN]️ No results were collected -- nothing to save.")
+        m = collector.compute_from_session(
+            session_path    = str(session_path),
+            frames_csv_path = str(frames_path) if frames_path else None,
+        )
+        print(m.summary())
+        results.append(m)
+
+    # ----------------------------------------------------------------
+    # Aggregate summary across all sessions
+    # ----------------------------------------------------------------
+    n = len(results)
+    if n > 1:
+        avg_wait   = sum(r.wait_reduction_pct          for r in results) / n
+        avg_thru   = sum(r.throughput_improvement_pct  for r in results) / n
+        avg_lat    = [r.detection_latency_s for r in results if r.detection_latency_s]
+        avg_lat_v  = sum(avg_lat) / len(avg_lat) if avg_lat else None
+
+        print("=" * 60)
+        print(f"  AGGREGATE  ({n} sessions)")
+        print(f"  [1] Avg wait-time reduction      : {avg_wait:+.1f}%")
+        print(f"  [2] Avg throughput improvement   : {avg_thru:+.1f}%")
+        if avg_lat_v:
+            print(f"  [3] Avg detection latency        : {avg_lat_v:.2f} s")
+        print("=" * 60)
+
+    # ----------------------------------------------------------------
+    # Save CSV
+    # ----------------------------------------------------------------
+    out_path = collector.save_results(results)
+    print(f"\n[DONE] Results saved -> {out_path}")
+    print(f"       {len(results)} session(s) | columns: wait_reduction_pct, "
+          "throughput_improvement_pct, detection_latency_s")
+
 
 if __name__ == "__main__":
     main()

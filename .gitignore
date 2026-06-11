@@ -22,10 +22,17 @@ env/
 
 # Training outputs
 audio/data/
+audio/sounds/
 audio/runs/
 vision/data/
 vision/runs/
+vision/train/
+vision/valid/
+vision/test/
 outputs/
+runs/
+logs/
+*.cache
 
 # Logs
 *.log

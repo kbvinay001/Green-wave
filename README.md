@@ -2,8 +2,8 @@
 
 > **Certainty-aware emergency vehicle preemption using audio-visual fusion.**
 
-> [!WARNING]
-> **🚧 This project is actively under development. Core systems are functional but the full pipeline is still being integrated and refined. Not yet production-ready.**
+> [!NOTE]
+> **🚧 Active development — Phase 1 (model training) complete. Both detection models are trained and evaluated; virtual-sensor mode, SUMO integration, security hardening and counterfactual evaluation are in progress.**
 
 Detects approaching ambulances from CCTV and microphone arrays, fuses the evidence with a temporal belief engine, and pre-clears a corridor of green traffic lights — before the vehicle reaches the intersection.
 
@@ -36,24 +36,66 @@ CCTV camera     → YOLOv11 ambulance detector → lane assigner ─────
 
 ---
 
+## Results (Phase 1 — trained models)
+
+### Siren CRNN (audio)
+
+Trained on **4,828 three-second windows @ 16 kHz** mixed from four free datasets —
+[Emergency Vehicle Siren Sounds](https://www.kaggle.com/datasets/vishnu0399/emergency-vehicle-siren-sounds),
+[sireNNet](https://data.mendeley.com/datasets/j4ydzzv4kb/1),
+[LSSiren](https://figshare.com/articles/dataset/Large-Scale_Dataset_for_Emergency_Vehicle_Siren_and_Road_Noises/17560865) and
+[UrbanSound8K](https://zenodo.org/records/1203745) hard negatives (car horn, drilling,
+engine idling, street music) — plus SNR-mixed synthetic sirens.  Train/val split is at
+**source-recording level** (no window leakage). Early-stopped at epoch 28/50.
+
+| Val set (716 windows) | AUC | Precision | Recall | Threshold |
+|---|---|---|---|---|
+| Real (held-out recordings) | **1.0000** | **1.0000** | **1.0000** | 0.373 |
+| Synthetic (SNR-mixed) | 1.0000 | 1.0000 | 0.963 | 0.373 |
+
+> Caveat: validation recordings are held out, but come from the same datasets
+> (clean capture). Expect lower numbers on distant/windy street microphones —
+> that is what the fusion layer's decay, arm-hold and cross-modal gates are for.
+
+![CRNN training curves](docs/results/audio_training_curves.png)
+
+### YOLOv11s ambulance detector (vision)
+
+Trained 80 epochs on the [Roboflow ambulance dataset](https://universe.roboflow.com/srivalli-yada/ambulance-wmxl5/dataset/5)
+(623 train / 141 val / 77 test images) — 12.4 min on an RTX 4060 Laptop GPU.
+
+| Split | mAP@50 | mAP@50-95 | Precision | Recall |
+|---|---|---|---|---|
+| Validation | **0.810** | 0.583 | 0.866 | 0.751 |
+| Test (held-out) | **0.800** | 0.584 | 0.820 | 0.748 |
+
+Inference: **4.8 ms/frame** (≈200 FPS capability — far above the 25 FPS target).
+
+| | |
+|---|---|
+| ![PR curve](docs/results/yolo_pr_curve.png) | ![Predictions](docs/results/yolo_val_predictions.jpg) |
+
+---
+
 ## Development Status
 
 | Module | Status | Notes |
 |---|---|---|
-| Audio CRNN siren detection | ✅ Complete | Training pipeline + inference ready |
+| Audio CRNN siren detection | ✅ Trained | AUC 1.000 on real val — `checkpoints/audio_best.pt` |
+| Real siren dataset pipeline | ✅ Complete | `audio/prepare_real_data.py` — 4 free sources, windowed manifests |
 | GCC-PHAT bearing estimation | ✅ Complete | Multi-mic array TDOA |
-| YOLOv11 vision detector | ✅ Complete | Training wrapper ready, model weights needed |
+| YOLOv11 vision detector | ✅ Trained | mAP@50 0.81 — `vision/weights/yolov11s-ambulance.pt` |
 | Temporal fusion engine | ✅ Complete | State machine, hysteresis, ETA |
 | SUMO traffic controller | ✅ Complete | Mock + TraCI backends |
 | Route predictor | ✅ Complete | Corridor + ETA computation |
 | Integration pipeline | ✅ Complete | Threaded, async, demo mode |
 | React dashboard | ✅ Complete | Bearing compass, intersection map, event feed |
 | FastAPI WebSocket server | ✅ Complete | /ws, /status, /reset, /beliefs |
-| Audio model training data | 🔄 In Progress | Synthetic generator done, real data needed |
-| Vision model weights | 🔄 In Progress | Dataset pipeline ready, training needed |
-| Live hardware integration | 🔄 In Progress | Mic capture + camera stubs to wire |
-| SUMO network file | 🔄 In Progress | Topology defined, .net.xml pending |
-| End-to-end field testing | 📋 Planned | Post model training |
+| Virtual sensor mode (video/WAV replay) | 🔄 Phase 2 | `--virtual` flag, time-synchronized |
+| SUMO network (OSM real intersection) | 🔄 Phase 2 | OSM Web Wizard export + TraCI wiring |
+| Fusion logic upgrades | 📋 Phase 3 | Cross-modal gate, Doppler gate, graded arm action |
+| Security hardening | 📋 Phase 4 | API key, WS token, rate limit, hash-chained audit log |
+| Counterfactual evaluation + deploy | 📋 Phase 5 | Paired SUMO runs, docker-compose, Cloudflare tunnel |
 
 ---
 
@@ -100,10 +142,13 @@ Open **http://localhost:5173** for the live dashboard.
 ### Audio (siren detection)
 
 ```bash
-# 1. Generate synthetic training data
+# 1. Download + build the real dataset (EVSS, sireNNet, LSSiren, UrbanSound8K ~7GB)
+python audio/prepare_real_data.py --download --build
+
+# 2. (optional) Generate extra synthetic training data
 python audio/tools/generate_synthetic.py
 
-# 2. Train the CRNN
+# 3. Train the CRNN on synthetic + real (validates on held-out real recordings)
 python audio/train.py --epochs 50
 ```
 
@@ -198,12 +243,13 @@ greenwave/
 
 ## 🚧 What's Still Being Built
 
-- **Live mic capture** — sounddevice integration for real microphone arrays
-- **Live camera capture** — OpenCV VideoCapture wired into the vision thread
-- **SUMO network files** — `.net.xml` and `.sumocfg` for the test intersection
-- **Trained model weights** — CRNN checkpoint + YOLOv11 ambulance weights
-- **Multi-intersection routing** — extend corridor predictor to real road network
-- **Performance benchmarking** — latency profiling end-to-end
+- **Virtual sensor mode** — time-synchronized video + WAV file replay (`run.py --virtual`)
+- **SUMO network files** — real intersection via OSM Web Wizard, `.sumocfg` + TraCI
+- **Fusion upgrades** — cross-modal gate, Doppler (receding-siren) gate, graded green-extension at arm
+- **Security hardening** — API-key auth, WebSocket token, per-lane rate limiting, hash-chained audit log
+- **Counterfactual evaluation** — paired SUMO runs (preemption on/off, same seed): time saved vs civilian delay
+- **Deployment** — docker-compose + free Cloudflare tunnel for the live dashboard
+- **Live hardware capture** — mic array (sounddevice) + camera (cv2) threads
 
 ---
 

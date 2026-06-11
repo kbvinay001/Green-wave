@@ -1,0 +1,17 @@
+# Green Wave++ ambulance detection dataset (Roboflow export, corrected)
+# Single class -- the export's labels only contain class 0 (ambulance).
+path: D:/project G/greenwave/vision
+train: train/images
+val: valid/images
+test: test/images
+
+nc: 1
+names: ['ambulance']
+
+# provenance
+roboflow:
+  workspace: srivalli-yada
+  project: ambulance-wmxl5
+  version: 5
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/srivalli-yada/ambulance-wmxl5/dataset/5
