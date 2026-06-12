@@ -37,6 +37,10 @@ websockets>=12.0
 # ── Configuration ────────────────────────────────────────────────────────────
 pyyaml>=6.0.1
 
+# ── Tests ────────────────────────────────────────────────────────────────────
+pytest>=8.0.0
+httpx>=0.27.0               # FastAPI TestClient transport
+
 # ── Optional: SUMO traffic simulation ────────────────────────────────────────
 # Install separately via: pip install traci
 # Or install with SUMO from https://sumo.dlr.de/

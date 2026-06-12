@@ -123,6 +123,21 @@ intersection:
         - {id: "cluster_3777691603_3777721158", distance_m: 384, approach_edge: "374387203#0"}
         - {id: "cluster_6154156987_9647693957", distance_m: 831, approach_edge: "657054233#1"}
 
+# Security (phase 4). The API key itself never lives in this file -- it's
+# committed. Resolution order (common/security.py): env var -> gitignored
+# secrets file -> auto-generated on first run and saved to that file.
+security:
+  api_key_env: "GREENWAVE_API_KEY"
+  secrets_file: "common/secrets.yaml"   # gitignored; created on first run
+  ws_token_ttl_sec: 300                 # dashboard WS tokens die after 5 min
+  cors_origins:                         # exact origins only, no wildcard
+    - "http://localhost:5173"
+    - "http://127.0.0.1:5173"
+  rate_limit:
+    max_preempts_per_lane: 4            # hard cap per lane...
+    window_sec: 3600                    # ...per sliding hour
+  audit_log: "logs/audit.jsonl"         # hash-chained; check with: python -m common.audit
+
 system:
   log_dir: "logs"
   output_dir: "outputs"

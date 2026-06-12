@@ -43,6 +43,8 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from common.audit import AuditLog
+from common.rate_limiter import SlidingWindowRateLimiter
 from fusion.fuser import FusionCommand, Lane, TemporalFusionEngine
 from fusion.route_predictor import RoutePredictor
 from fusion.sumo_controller import SumoController
@@ -163,6 +165,24 @@ class EndToEndPipeline:
                                    gui=bool(config.get("sumo", {}).get("gui")))
         self.logger    = E2ELogger()
 
+        # Security (phase 4): cap preemptions per lane and keep a tamper-
+        # evident record of every fire, denial and reset.
+        sec = config.get("security", {}) or {}
+        rl  = sec.get("rate_limit", {}) or {}
+        self.rate_limiter = SlidingWindowRateLimiter(
+            max_events = int(rl.get("max_preempts_per_lane", 4)),
+            window_sec = float(rl.get("window_sec", 3600)),
+        )
+        audit_path = Path(sec.get("audit_log", "logs/audit.jsonl"))
+        if not audit_path.is_absolute():
+            audit_path = ROOT / audit_path
+        self.audit = AuditLog(audit_path)
+        self.audit.append("pipeline_start", {
+            "demo":    demo,
+            "virtual": virtual is not None,
+            "lanes":   [l.name for l in self.lanes],
+        })
+
         self._broadcast: Optional[Callable[..., Coroutine]] = None
 
     @staticmethod
@@ -216,6 +236,7 @@ class EndToEndPipeline:
             self._rig.stop()
         self.sumo.stop()
         self.logger.save()
+        self.audit.append("pipeline_stop", {})
 
     # ------------------------------------------------------------------
     # Source threads
@@ -312,16 +333,8 @@ class EndToEndPipeline:
                         "seconds": ext, "applied": applied,
                     })
 
-            # Handle new preemptions
-            for cmd in commands:
-                tls_ids, etas = resolve_command_etas(self.predictor, cmd)
-                print(
-                    f"[!!] PREEMPT  lane={cmd.target_lane}"
-                    f"  belief={cmd.belief:.3f}"
-                    f"  ETAs={etas}"
-                )
-                self.sumo.trigger_preemption(cmd.target_lane, tls_ids, etas)
-                self.logger.log_preempt(cmd)
+            # Handle new preemptions (rate-gated; denials never reach SUMO)
+            fired = [cmd for cmd in commands if self._handle_preemption(cmd, ts)]
 
             # Frame log
             self.logger.log_frame(ts, audio_conf, len(vision_dets))
@@ -329,10 +342,47 @@ class EndToEndPipeline:
             # Dashboard broadcast
             if self._broadcast is not None:
                 await self._broadcast(self._build_payload(
-                    ts, audio_conf, audio_bearing, vision_dets, commands
+                    ts, audio_conf, audio_bearing, vision_dets, fired
                 ))
 
             await asyncio.sleep(0.1)
+
+    # ------------------------------------------------------------------
+
+    def _handle_preemption(self, cmd: FusionCommand, ts: float) -> bool:
+        """
+        Rate-gate then fire one preemption. Returns True when it actually
+        went out to the signals. The cap (security.rate_limit) is the
+        backstop against a spoofed siren or a glitching detector strobing
+        an intersection -- whatever the sensors believe, a lane gets at
+        most N preemptions per window, and every decision is audited.
+        """
+        if not self.rate_limiter.allow(cmd.target_lane, now=ts):
+            wait = self.rate_limiter.retry_after(cmd.target_lane, now=ts)
+            print(f"[RATE] preempt blocked  lane={cmd.target_lane}"
+                  f"  cap reached, next slot in {wait:.0f}s")
+            detail = {"lane": cmd.target_lane,
+                      "belief": round(cmd.belief, 3),
+                      "retry_after_sec": round(wait, 1)}
+            self.logger.log_event("preempt_denied_rate_limit", detail)
+            self.audit.append("preempt_denied_rate_limit", detail)
+            return False
+
+        tls_ids, etas = resolve_command_etas(self.predictor, cmd)
+        print(
+            f"[!!] PREEMPT  lane={cmd.target_lane}"
+            f"  belief={cmd.belief:.3f}"
+            f"  ETAs={etas}"
+        )
+        self.sumo.trigger_preemption(cmd.target_lane, tls_ids, etas)
+        self.logger.log_preempt(cmd)
+        self.audit.append("preempt_fired", {
+            "lane":   cmd.target_lane,
+            "belief": round(cmd.belief, 3),
+            "tls":    list(tls_ids),
+            "etas":   [round(float(e), 1) for e in etas],
+        })
+        return True
 
     # ------------------------------------------------------------------
 

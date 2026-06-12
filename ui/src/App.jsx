@@ -8,7 +8,9 @@ import EventFeed        from "./components/EventFeed";
 // Constants
 // ---------------------------------------------------------------------------
 
-const WS_URL       = "ws://localhost:8000/ws";
+const API_BASE     = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+const API_KEY      = import.meta.env.VITE_API_KEY  || "";   // run.py writes ui/.env.local
+const WS_BASE      = API_BASE.replace(/^http/, "ws");
 const RECONNECT_MS = 3000;
 const MAX_EVENTS   = 120;
 
@@ -49,6 +51,7 @@ export default function App() {
   const [connected, setConnected]   = useState(false);
   const wsRef      = useRef(null);
   const retryRef   = useRef(null);
+  const connectRef = useRef(null);   // always the latest connect(), for retries
 
   // Pipeline telemetry
   const [audioConf,    setAudioConf]    = useState(0);
@@ -81,10 +84,28 @@ export default function App() {
   // WebSocket connection with auto-reconnect
   // ------------------------------------------------------------------
 
-  const connect = useCallback(() => {
+  const connect = useCallback(async () => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    const ws = new WebSocket(WS_URL);
+    // Trade the API key for a short-lived token first. The socket URL only
+    // ever carries a token that dies in minutes -- never the key itself --
+    // and every reconnect fetches a fresh one, so expiry never strands us.
+    let token;
+    try {
+      const resp = await fetch(`${API_BASE}/token`, {
+        method:  "POST",
+        headers: { "X-API-Key": API_KEY },
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      token = (await resp.json()).token;
+    } catch (err) {
+      addEvent(mkEvent("disconnected", { message: `Auth failed (${err.message}) — retrying…` }));
+      clearTimeout(retryRef.current);
+      retryRef.current = setTimeout(() => connectRef.current?.(), RECONNECT_MS);
+      return;
+    }
+
+    const ws = new WebSocket(`${WS_BASE}/ws?token=${encodeURIComponent(token)}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -140,15 +161,17 @@ export default function App() {
     ws.onclose = () => {
       setConnected(false);
       addEvent(mkEvent("disconnected", { message: "Backend disconnected — reconnecting…" }));
-      retryRef.current = setTimeout(connect, RECONNECT_MS);
+      retryRef.current = setTimeout(() => connectRef.current?.(), RECONNECT_MS);
     };
 
     ws.onerror = () => ws.close();
   }, [addEvent]);
 
   useEffect(() => {
-    connect();
+    connectRef.current = connect;
+    const kickoff = setTimeout(() => connectRef.current?.(), 0);
     return () => {
+      clearTimeout(kickoff);
       clearTimeout(retryRef.current);
       wsRef.current?.close();
     };

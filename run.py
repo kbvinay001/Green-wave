@@ -98,6 +98,18 @@ def main() -> None:
     args   = parse_args()
     config = load_config()
 
+    # Security bootstrap: make sure an API key exists before anything binds.
+    from common.security import resolve_api_key
+    sec_cfg = config.get("security", {}) or {}
+    api_key, key_source = resolve_api_key(sec_cfg)
+    secrets_file = sec_cfg.get("secrets_file", "common/secrets.yaml")
+    source_msg = {
+        "env":       f"from ${sec_cfg.get('api_key_env', 'GREENWAVE_API_KEY')}",
+        "file":      f"from {secrets_file}",
+        "generated": f"newly generated -> {secrets_file}",
+    }[key_source]
+    print(f"[SEC] API key {source_msg}  |  audit -> {sec_cfg.get('audit_log', 'logs/audit.jsonl')}")
+
     from integration.pipeline import EndToEndPipeline
     virtual = {"video": args.video, "wav": args.wav} if args.virtual else None
     if args.sumo:
@@ -109,6 +121,13 @@ def main() -> None:
     vite_proc = None
     if not args.no_ui:
         ui_dir = ROOT / "ui"
+        # Hand the dashboard its credentials. .env.local is gitignored and
+        # rewritten on every start, so a rotated key just works.
+        (ui_dir / ".env.local").write_text(
+            "# Written by run.py on every start -- gitignored.\n"
+            f"VITE_API_KEY={api_key}\n"
+            f"VITE_API_BASE=http://localhost:{args.port}\n"
+        )
         if (ui_dir / "node_modules").exists():
             vite_proc = subprocess.Popen(
                 ["npm.cmd", "run", "dev", "--", "--port", "5173"],

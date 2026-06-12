@@ -3,7 +3,7 @@
 > **Certainty-aware emergency vehicle preemption using audio-visual fusion.**
 
 > [!NOTE]
-> **🚧 Active development — Phase 1 (model training) complete. Both detection models are trained and evaluated; virtual-sensor mode, SUMO integration, security hardening and counterfactual evaluation are in progress.**
+> **🚧 Active development — Phases 1–4 complete: both detection models trained, virtual-sensor replay against the real Benz Circle network, trust-gated fusion, and security hardening (auth, rate limiting, tamper-evident audit). Phase 5 — counterfactual evaluation + deployment — is what's left.**
 
 Detects approaching ambulances from CCTV and microphone arrays, fuses the evidence with a temporal belief engine, and pre-clears a corridor of green traffic lights — before the vehicle reaches the intersection.
 
@@ -129,6 +129,38 @@ geometry (0/158/384/831m on Benz Circle) instead of a hard-coded 30m
 junction spacing — the far junction's green arrives when the ambulance
 does, not 50 seconds early.
 
+### Phase 4 — security hardening
+
+A traffic light that listens to the street is an attack surface. This phase
+assumes someone *will* play a siren from a phone speaker or curl the API,
+and bounds the damage:
+
+- **API key everywhere** — every REST endpoint except `/status` requires
+  `X-API-Key`. The key never enters git: it resolves from the
+  `GREENWAVE_API_KEY` env var, falling back to the gitignored
+  `common/secrets.yaml`, which `run.py` auto-generates on first start and
+  hands to the dashboard via `ui/.env.local` (also gitignored).
+- **WebSocket tokens** — browsers can't put headers on a WebSocket, so the
+  dashboard trades the key for a short-lived token (`POST /token`, 5 min
+  TTL, in-memory only) and connects with `/ws?token=...`. A leaked
+  dashboard URL goes stale in minutes, and every reconnect fetches a
+  fresh token, so expiry never strands the UI.
+- **Per-lane rate limiting** — at most 4 preemptions per lane per sliding
+  hour (`security.rate_limit`). However loud the world gets, a spoofed
+  siren or glitching detector can't strobe an intersection; denials are
+  logged and audited but never reach SUMO.
+- **Hash-chained audit log** — every preemption fired or denied, every
+  fusion reset, every pipeline start/stop lands in `logs/audit.jsonl`,
+  each line SHA-256-chained to the one before it. Edit, delete or reorder
+  any line and `python -m common.audit logs/audit.jsonl` names the first
+  broken entry.
+- **Pydantic + CORS lockdown** — request/response bodies are typed models
+  (token TTLs bounded at an hour, malformed WS messages dropped), and
+  `allow_origins=["*"]` became an explicit dashboard-origin allowlist.
+  `/reset` used to mutate state over GET; it's POST now, and audited.
+
+28 new tests; 79 total passing.
+
 ---
 
 ## Development Status
@@ -144,7 +176,7 @@ does, not 50 seconds early.
 | Route predictor | ✅ Complete | Corridor + ETA computation |
 | Integration pipeline | ✅ Complete | Threaded, async, demo mode |
 | React dashboard | ✅ Complete | Bearing compass, intersection map, event feed |
-| FastAPI WebSocket server | ✅ Complete | /ws, /status, /reset, /beliefs |
+| FastAPI WebSocket server | ✅ Complete | /ws + /status + /token + /reset + /beliefs — API-keyed since phase 4 |
 | Virtual sensor mode (video/WAV replay) | ✅ Complete | `run.py --virtual`, one shared media clock, A/V sync tested |
 | Real SUMO TraCI backend | ✅ Complete | Sim-time green cascade, per-approach signal states, program restore |
 | Benz Circle (Vijayawada) network | ✅ Complete | OSM extract → netconvert, 4-signal corridor on MG Rd/Bandar Rd |
@@ -152,7 +184,10 @@ does, not 50 seconds early.
 | Doppler gate | ✅ Complete | Receding sirens (falling pitch envelope) weighted ×0.3 |
 | Graded arm action | ✅ Complete | Belief ≥0.6 stretches the nearest green +5s before full preemption |
 | ETA-true green cascade | ✅ Complete | ETAs from mapped corridor distances, verified per-TLS in SUMO |
-| Security hardening | 📋 Phase 4 | API key, WS token, rate limit, hash-chained audit log |
+| API key + WS token auth | ✅ Complete | X-API-Key on REST, short-lived tokens on /ws, key lives outside git |
+| Per-lane preemption rate limit | ✅ Complete | 4 per lane per sliding hour; denials audited, never reach SUMO |
+| Hash-chained audit log | ✅ Complete | `logs/audit.jsonl`, SHA-256 chain — `python -m common.audit` verifies |
+| CORS + input validation | ✅ Complete | Origin allowlist, pydantic everywhere, /reset moved to POST |
 | Counterfactual evaluation + deploy | 📋 Phase 5 | Paired SUMO runs, docker-compose, Cloudflare tunnel |
 
 ---
@@ -192,6 +227,10 @@ python run.py --demo
 Or double-click **`Launch GreenWave++.bat`** in the `greenwave/` folder.
 
 Open **http://localhost:5173** for the live dashboard.
+
+First start generates an API key into `common/secrets.yaml` (gitignored) and
+hands it to the dashboard automatically — nothing to configure. To use your
+own key instead, set the `GREENWAVE_API_KEY` environment variable.
 
 ---
 
@@ -235,6 +274,11 @@ All system parameters in `common/config.yaml`:
 | `fusion` | `sigma_angle_deg` | 20 | Audio bearing Gaussian kernel width |
 | `sumo` | `all_red_duration` | 2.5s | Safety clearance before green wave |
 | `sumo` | `preempt_green_duration` | 12s | Green hold per intersection |
+| `security` | `ws_token_ttl_sec` | 300 | Dashboard WebSocket token lifetime |
+| `security` | `rate_limit.max_preempts_per_lane` | 4 | Preemption cap per lane per window |
+| `security` | `rate_limit.window_sec` | 3600 | Sliding rate-limit window |
+| `security` | `cors_origins` | localhost:5173 | Exact origins allowed to call the API |
+| `security` | `audit_log` | logs/audit.jsonl | Hash-chained audit trail location |
 
 ---
 
@@ -301,10 +345,6 @@ greenwave/
 
 ## 🚧 What's Still Being Built
 
-- **Virtual sensor mode** — time-synchronized video + WAV file replay (`run.py --virtual`)
-- **SUMO network files** — real intersection via OSM Web Wizard, `.sumocfg` + TraCI
-- **Fusion upgrades** — cross-modal gate, Doppler (receding-siren) gate, graded green-extension at arm
-- **Security hardening** — API-key auth, WebSocket token, per-lane rate limiting, hash-chained audit log
 - **Counterfactual evaluation** — paired SUMO runs (preemption on/off, same seed): time saved vs civilian delay
 - **Deployment** — docker-compose + free Cloudflare tunnel for the live dashboard
 - **Live hardware capture** — mic array (sounddevice) + camera (cv2) threads
