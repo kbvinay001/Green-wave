@@ -259,6 +259,19 @@ def attach_pipeline(pipeline) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Built dashboard (phase 5)
+# ---------------------------------------------------------------------------
+
+# When ui/dist exists (vite build / the docker image), serve it straight
+# from the backend -- one port, one container, one tunnel. Mounted last so
+# the API routes above always win; everything else falls through to the SPA.
+_dist = ROOT / "ui" / "dist"
+if _dist.exists():
+    from fastapi.staticfiles import StaticFiles
+    app.mount("/", StaticFiles(directory=str(_dist), html=True), name="dashboard")
+
+
+# ---------------------------------------------------------------------------
 # Standalone entry
 # ---------------------------------------------------------------------------
 

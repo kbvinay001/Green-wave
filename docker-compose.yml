@@ -1,0 +1,24 @@
+# Green Wave++ -- one service for the whole demo, one optional free tunnel.
+#
+#   GREENWAVE_API_KEY=pick-something docker compose up --build
+#       -> dashboard at http://localhost:8000/#key=pick-something
+#
+#   docker compose --profile tunnel up --build
+#       -> additionally prints a free https://<random>.trycloudflare.com URL
+#          in the tunnel service logs (no Cloudflare account needed). Share
+#          it as https://<random>.trycloudflare.com/#key=<your key>.
+
+services:
+  greenwave:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - GREENWAVE_API_KEY=${GREENWAVE_API_KEY:?export GREENWAVE_API_KEY first}
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://greenwave:8000
+    depends_on:
+      - greenwave
+    profiles: ["tunnel"]

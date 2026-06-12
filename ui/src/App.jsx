@@ -8,8 +8,23 @@ import EventFeed        from "./components/EventFeed";
 // Constants
 // ---------------------------------------------------------------------------
 
-const API_BASE     = import.meta.env.VITE_API_BASE || "http://localhost:8000";
-const API_KEY      = import.meta.env.VITE_API_KEY  || "";   // run.py writes ui/.env.local
+// Dev: run.py writes ui/.env.local with the base + key for the Vite server.
+// Built/tunneled: the backend serves this bundle itself, so the API lives at
+// our own origin, and the key arrives once via the URL hash (#key=...) --
+// stashed in sessionStorage, then scrubbed from the address bar.
+function resolveApiKey() {
+  const m = window.location.hash.match(/key=([^&]+)/);
+  if (m) {
+    sessionStorage.setItem("gw_api_key", decodeURIComponent(m[1]));
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
+  return sessionStorage.getItem("gw_api_key")
+      || import.meta.env.VITE_API_KEY
+      || "";
+}
+
+const API_BASE     = import.meta.env.VITE_API_BASE || window.location.origin;
+const API_KEY      = resolveApiKey();
 const WS_BASE      = API_BASE.replace(/^http/, "ws");
 const RECONNECT_MS = 3000;
 const MAX_EVENTS   = 120;

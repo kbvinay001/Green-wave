@@ -1,0 +1,29 @@
+# Keep the build context lean -- and keep secrets out of the image.
+.git
+.venv
+venv
+__pycache__
+**/__pycache__
+.pytest_cache
+
+# Secrets must arrive via environment, never be baked into layers
+common/secrets.yaml
+ui/.env.local
+*.env
+
+# Node artifacts (stage 1 rebuilds the dashboard from source)
+ui/node_modules
+ui/dist
+
+# Datasets, training artifacts and run output -- gigabytes of not-needed
+audio/data
+audio/sounds
+vision/train
+vision/valid
+vision/test
+vision/data
+outputs
+logs
+runs
+docs
+*.pt.bak

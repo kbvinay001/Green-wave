@@ -3,29 +3,44 @@
 > **Certainty-aware emergency vehicle preemption using audio-visual fusion.**
 
 > [!NOTE]
-> **🚧 Active development — Phases 1–4 complete: both detection models trained, virtual-sensor replay against the real Benz Circle network, trust-gated fusion, and security hardening (auth, rate limiting, tamper-evident audit). Phase 5 — counterfactual evaluation + deployment — is what's left.**
+> **✅ All five phases complete — trained detectors, virtual-sensor replay on the real Benz Circle network, trust-gated fusion, security hardening, and a counterfactual evaluation showing up to 73 s / 40% faster ambulance corridor times. Remaining: live mic/camera capture (hardware).**
 
 Detects approaching ambulances from CCTV and microphone arrays, fuses the evidence with a temporal belief engine, and pre-clears a corridor of green traffic lights — before the vehicle reaches the intersection.
+
+![Live dashboard during a preemption](docs/img/dashboard_armed.png)
+*The dashboard mid-demo: the siren arms the north lane, the camera confirms, belief hits 1.0, the preemption fires and the north approach goes green — the event log on the right tells the story.*
 
 ---
 
 ## System Architecture
 
-```
-Microphone array → CRNN siren detector → GCC-PHAT bearing estimator ─┐
-                                                                       ├→ TemporalFusionEngine
-CCTV camera     → YOLOv11 ambulance detector → lane assigner ─────────┘
-                                                        │
-                                             belief >= 0.8 + held 0.5s
-                                                        │
-                                               SumoController
-                                         ┌─────────────────────────┐
-                                         │ All-red clearance (2.5s) │
-                                         │ Green cascade per TLS    │
-                                         │ 12s hold -> restore      │
-                                         └─────────────────────────┘
-                                                        │
-                                              React dashboard (WebSocket)
+How a siren becomes a green light — every arrow below is real code, and the
+gates are the phase-3/4 safeguards that keep a loud phone speaker from owning
+an intersection:
+
+```mermaid
+flowchart LR
+  subgraph sensors [Sensors]
+    MIC["3-mic array"] --> CRNN["CRNN siren detector"]
+    MIC --> GCC["GCC-PHAT bearing"]
+    CAM["camera"] --> YOLO["YOLOv11 ambulance detector"]
+  end
+
+  CRNN --> DOP{"Doppler gate<br/>receding? x0.3"}
+  DOP --> FUSE["Temporal fusion<br/>10 Hz belief per lane"]
+  GCC --> FUSE
+  YOLO --> FUSE
+
+  FUSE --> GATE{"cross-modal gate<br/>audio alone caps at 0.7"}
+  GATE -->|"belief ≥ 0.6 (armed)"| EXT["stretch nearest green +5 s"]
+  GATE -->|"belief ≥ 0.8 + camera confirm"| RATE{"rate limit<br/>4 / lane / hour"}
+  RATE -->|allowed| CASCADE["SUMO green cascade<br/>all-red 2.5 s → green per ETA → restore"]
+  RATE -->|denied| AUDIT
+  CASCADE --> AUDIT["hash-chained audit log"]
+  EXT --> AUDIT
+
+  FUSE --> WS["FastAPI WebSocket<br/>(API key + tokens)"]
+  WS --> DASH["React dashboard"]
 ```
 
 ### Key Technical Highlights
@@ -161,6 +176,74 @@ and bounds the damage:
 
 28 new tests; 79 total passing.
 
+### Phase 5 — counterfactual evaluation + deployment
+
+The question that decides whether any of this matters: with the **same
+traffic, same routes, same random seed**, how much faster does the ambulance
+cross Benz Circle when the green wave fires — and what does it cost everyone
+else? `evaluation/counterfactual.py` runs paired headless SUMO simulations
+(baseline vs green wave) across three demand levels, three seeds each. All
+numbers come from SUMO's tripinfo output; there are no assumed cycle times
+or analytical shortcuts anywhere.
+
+![The real corridor](docs/img/benz_circle_network.png)
+
+The eval ambulance deliberately does **not** carry SUMO's `bluelight` device
+— that model parts traffic into a perfect rescue lane and drives through red
+lights, which is precisely the citizen-cooperation assumption that fails on
+the arterials this project targets. (For the record: with bluelight on, the
+measured benefit is noise, −6 s to +3 s.) The eval EV obeys signals and
+queues like everything else, so the measurement isolates exactly what signal
+preemption removes.
+
+| demand | EV corridor time | time saved | EV full stops | cost per civilian |
+|---|---|---|---|---|
+| 1× recorded volume | 175.6 s → 121.1 s | **54.5 s (31.0%)** | 4 → 1.7 | +0.4 s |
+| 2× | 183.0 s → 178.2 s | 4.7 s (2.6%) | 4.3 → 2.3 | +0.6 s |
+| 3× | 183.9 s → 110.7 s | **73.2 s (39.8%)** | 5 → 1 | +1.7 s |
+
+![Counterfactual results](docs/img/counterfactual_travel_time.png)
+
+![EV speed trace at 3x demand](docs/img/counterfactual_ev_speed.png)
+
+The speed trace is the whole argument in one picture: both runs are
+identical until the cascade arms (dotted line), then the baseline ambulance
+dead-stops three times in signal queues while the green-wave ambulance
+keeps rolling and finishes ~65 s earlier.
+
+The 2× dip is consistent across all seeds and honest: with moderate queues,
+the fixed 12 s green hold expires before the EV clears the backlog, so it
+catches re-imposed reds — at 3× the same cascade drains a much longer queue
+just ahead of the EV and pays off massively. Demand-adaptive hold duration
+is the obvious next lever (future work).
+
+Reproduce with: `python -m evaluation.counterfactual` (needs SUMO; ~5 min).
+
+#### Deployment
+
+One container serves the API **and** the built dashboard on port 8000
+(`ui/dist` is mounted into FastAPI), so the whole demo ships as:
+
+```bash
+# local
+GREENWAVE_API_KEY=pick-something docker compose up --build
+#   -> http://localhost:8000/#key=pick-something
+
+# plus a free public URL (Cloudflare quick tunnel, no account needed)
+docker compose --profile tunnel up --build
+#   -> share https://<random>.trycloudflare.com/#key=<your key>
+```
+
+The `#key=...` fragment never leaves the browser: the dashboard stashes it
+in sessionStorage and scrubs the address bar, then trades it for short-lived
+WS tokens exactly like the dev setup. Without docker:
+`python run.py --demo` locally, then `scripts\tunnel.bat`.
+
+The README screenshots themselves come from
+`scripts/screenshot_dashboard.py`, which drives headless Chrome over the
+DevTools protocol (a WebSocket-streaming page never "finishes loading", so
+the plain `--screenshot` flag captures an offline shell).
+
 ---
 
 ## Development Status
@@ -188,24 +271,19 @@ and bounds the damage:
 | Per-lane preemption rate limit | ✅ Complete | 4 per lane per sliding hour; denials audited, never reach SUMO |
 | Hash-chained audit log | ✅ Complete | `logs/audit.jsonl`, SHA-256 chain — `python -m common.audit` verifies |
 | CORS + input validation | ✅ Complete | Origin allowlist, pydantic everywhere, /reset moved to POST |
-| Counterfactual evaluation + deploy | 📋 Phase 5 | Paired SUMO runs, docker-compose, Cloudflare tunnel |
+| Counterfactual evaluation | ✅ Complete | Paired SUMO runs, 3 seeds × 3 demand levels — up to 73 s / 40% saved |
+| Backend-served dashboard | ✅ Complete | `ui/dist` mounted into FastAPI — one port, one container |
+| docker-compose + free tunnel | ✅ Complete | Single image (CPU torch) + opt-in `cloudflared` quick-tunnel profile |
 
 ---
 
 ## 📊 Simulation Results
 
-> Results from SUMO–TraCI simulation across 2 recorded preemption sessions.
-
-| Metric | Value |
-|---|---|
-| Sessions processed | 2 (with confirmed preemption events) |
-| Signal wait-time reduction | **+98.1% average** |
-| Intersection throughput gain | **+127.3% average** |
-| Preemption latency | 0.8s (audio-visual fusion to signal change) |
-| Lane prediction accuracy | 94% (temporal fusion engine) |
-
-> [!NOTE]
-> Results are from controlled SUMO simulation. Live hardware integration and field benchmarking are in progress (see development status above).
+The headline numbers live in [Phase 5 — counterfactual evaluation](#phase-5--counterfactual-evaluation--deployment):
+paired SUMO runs on the real Benz Circle network, measured (not modelled)
+from tripinfo output — **54.5 s saved at recorded demand, 73.2 s at 3×**,
+for well under 2 s of added delay per civilian vehicle. Full per-seed data
+in `evaluation/results/counterfactual.json`.
 
 ## Quick Start (Demo Mode)
 
@@ -225,12 +303,18 @@ python run.py --demo
 ```
 
 Or double-click **`Launch GreenWave++.bat`** in the `greenwave/` folder.
+Prefer containers? `GREENWAVE_API_KEY=pick-something docker compose up --build`
+and skip everything above.
 
 Open **http://localhost:5173** for the live dashboard.
 
 First start generates an API key into `common/secrets.yaml` (gitignored) and
 hands it to the dashboard automatically — nothing to configure. To use your
 own key instead, set the `GREENWAVE_API_KEY` environment variable.
+
+![Green cascade marching up the north approach](docs/img/dashboard_preempt.png)
+*Seconds later in the same demo: the cascade walks the green up the north
+approach signal by signal while everything else stays red.*
 
 ---
 
@@ -324,10 +408,24 @@ greenwave/
 │
 ├── common/
 │   ├── config.yaml          System parameters
+│   ├── security.py          API key resolution + WS token store
+│   ├── rate_limiter.py      Sliding-window preemption cap
+│   ├── audit.py             Hash-chained audit log (+ CLI verifier)
 │   └── verify_env.py        Environment health-check
+│
+├── evaluation/
+│   ├── counterfactual.py    Paired SUMO runs: preemption on/off, per demand level
+│   ├── runner.py            Session-log metrics from live runs
+│   └── results/             counterfactual.json (committed numbers)
+│
+├── scripts/
+│   ├── screenshot_dashboard.py  Headless-Chrome dashboard capture (DevTools)
+│   └── tunnel.bat               Free Cloudflare quick tunnel
 │
 ├── run.py                  Unified launcher
 ├── Launch GreenWave++.bat  Windows one-click launcher
+├── Dockerfile              Backend + built dashboard, one image
+├── docker-compose.yml      `up` for local, `--profile tunnel` for public URL
 └── requirements.txt        Python dependencies
 ```
 
@@ -343,11 +441,11 @@ greenwave/
 ---
 
 
-## 🚧 What's Still Being Built
+## 🔭 Future Work
 
-- **Counterfactual evaluation** — paired SUMO runs (preemption on/off, same seed): time saved vs civilian delay
-- **Deployment** — docker-compose + free Cloudflare tunnel for the live dashboard
-- **Live hardware capture** — mic array (sounddevice) + camera (cv2) threads
+- **Live hardware capture** — mic array (sounddevice) + camera (cv2) threads; everything downstream is already wired
+- **Demand-adaptive green hold** — the 2× finding above: replace the fixed 12 s hold with queue-length-aware timing
+- **Multi-corridor arbitration** — two ambulances from different approaches at once
 
 ---
 

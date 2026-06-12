@@ -117,8 +117,10 @@ def test_reset_needs_key_and_is_audited(client, tmp_path):
 
 
 def test_old_get_reset_route_is_gone(client):
-    # mutating state over GET was the phase-3 wart this phase fixes
-    assert client.get("/reset", headers={"X-API-Key": KEY}).status_code == 405
+    # mutating state over GET was the phase-3 wart this phase fixes.
+    # 405 without the SPA mount, 404 falling through to it -- either way,
+    # nothing mutates.
+    assert client.get("/reset", headers={"X-API-Key": KEY}).status_code in (404, 405)
 
 
 # ------------------------------------------------------------------
