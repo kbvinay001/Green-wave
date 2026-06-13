@@ -329,6 +329,33 @@ This runs as a **hard CI gate** (`tests/test_adversarial.py`) — the build
 fails if any benign scenario ever false-fires. Reproduce with
 `python -m evaluation.adversarial` (no SUMO needed; seconds).
 
+#### Real-time latency
+
+"Does it run in real time, and how fast does the light change?" Two separate
+answers (`evaluation/latency.py`, measured on the actual models, RTX 4060
+Laptop):
+
+**Compute** — each component, median wall-clock per call vs its real-time
+budget:
+
+| component | per call | budget | headroom |
+|---|---|---|---|
+| audio (CRNN siren + GCC-PHAT bearing + Doppler) | 6.2 ms | 100 ms (10 Hz) | **16×** |
+| vision (YOLOv11s @ 640) | 7.2 ms | 40 ms (25 fps) | **5.6×** |
+| fusion (one 10 Hz tick) | 0.003 ms | 100 ms | ~30000× |
+
+![Compute latency vs budget](docs/img/latency.png)
+
+Every stage runs comfortably faster than real time on a *laptop* GPU — the
+hardware is nowhere near the bottleneck.
+
+**Action delay** — siren onset → preemption command is dominated not by
+compute but by the *deliberate* certainty gating: the lane must arm, hold for
+`arm_duration_sec` (0.5 s), cross the preempt threshold **and** get a camera
+confirmation. In the demo that lands ~5–6 s after onset — which is the point:
+the few-millisecond compute budget is spent buying confidence, not fighting
+the clock. Reproduce with `python evaluation/latency.py`.
+
 #### Deployment
 
 One container serves the API **and** the built dashboard on port 8000

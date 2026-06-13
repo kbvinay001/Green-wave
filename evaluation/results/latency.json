@@ -1,0 +1,39 @@
+{
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "iters": 60,
+  "budgets_ms": {
+    "audio": 100.0,
+    "vision": 40.0,
+    "fusion": 100.0
+  },
+  "components": {
+    "audio_full": {
+      "mean_ms": 6.2219,
+      "median_ms": 6.1554,
+      "p95_ms": 7.1591,
+      "iters": 60
+    },
+    "vision_yolo": {
+      "mean_ms": 7.2777,
+      "median_ms": 7.1929,
+      "p95_ms": 7.7074,
+      "iters": 60
+    },
+    "fusion_tick": {
+      "mean_ms": 0.0034,
+      "median_ms": 0.0033,
+      "p95_ms": 0.0035,
+      "iters": 200
+    }
+  },
+  "realtime_factor": {
+    "audio": 16.2,
+    "vision": 5.6,
+    "fusion": 30303.0
+  },
+  "action_delay": {
+    "arm_hold_sec": 0.5,
+    "note": "siren onset -> preemption is dominated by the deliberate certainty gating: the lane must arm (belief >= arm_threshold), hold for arm_duration_sec, cross preempt_threshold AND have a camera confirmation within vision_confirm_window_sec. In the synthetic demo this lands ~5-6 s after onset; the compute above is a negligible fraction of it."
+  }
+}
