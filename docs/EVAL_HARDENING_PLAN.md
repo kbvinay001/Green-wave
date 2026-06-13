@@ -61,7 +61,7 @@ Effort is **focused work-hours** for me, not student-calendar days.
 | ✅ **T2** | **DONE** — `evaluation/adversarial.py` wired to the real engine (§1); 0 benign false-fires, spoof bounded; hard CI gate in `tests/test_adversarial.py` | Fix #2's sibling — validates Phases 3–4 | done | — |
 | ✅ **T3** | **DONE** — perfect-knowledge re-run at 80 m trigger. Closed-loop matches perfect@80 (gap n.s., p > 0.16); timing effect significant (+10 s @1×, +25 s @2×). Honest reframe: **trigger timing dominates detection accuracy** | Fix #2 | done | — |
 | **T4** | **Sensitivity sweep** — audio hit-rate 40→95%, plot time-saved vs detection rate; headline "still saves >X s at 60% detection" | Fix #4 — robustness | ~3 h | closed-loop mode (done) |
-| **T5** | **Hard audio test set** — sirens mixed into UrbanSound8K at −5..+5 dB SNR, distance-attenuated; re-report AUC/P/R; reframe 1.000 as clean-condition ceiling | Fix #1 — worst credibility liability | ~1–2 days | dataset already downloaded |
+| ✅ **T5** | **DONE — hard audio test set** — sirens mixed into UrbanSound8K at −5..+5 dB SNR, `audio/hard_eval.py` reproduces the clean 1.000 then reports **0.925 overall** (0.86 @ -5 dB, 0.98 @ +5 dB); 1.000 reframed as clean ceiling in the README | Fix #1 — worst credibility liability | done | — |
 | **T6** | **Second corridor** — same eval on one more OSM network (different topology) | Fix #5 — generalization | ~half day | `build_corridor.py` exists |
 | **T7** | **End-to-end wall-clock latency** — siren onset → signal change in the *real* pipeline (not sim-time) | Deployability number | ~half day | demo pipeline (done) |
 | **T8** | **Route-uncertainty test** — ambulance turns *off* the predicted corridor; show graceful degradation | Completeness | ~half day | eval harness |

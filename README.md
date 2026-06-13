@@ -68,9 +68,37 @@ engine idling, street music) — plus SNR-mixed synthetic sirens.  Train/val spl
 | Real (held-out recordings) | **1.0000** | **1.0000** | **1.0000** | 0.373 |
 | Synthetic (SNR-mixed) | 1.0000 | 1.0000 | 0.963 | 0.373 |
 
-> Caveat: validation recordings are held out, but come from the same datasets
-> (clean capture). Expect lower numbers on distant/windy street microphones —
-> that is what the fusion layer's decay, arm-hold and cross-modal gates are for.
+The 1.000 is the **clean-condition ceiling**, and on its own it is not a
+claim worth much: held-out or not, those validation clips are isolated,
+studio-clean sirens versus isolated noise, so separating them is an easy
+task. The number that matters is the deployment-realistic one.
+
+**Hard test — sirens in street noise** (`audio/hard_eval.py`). The *same
+held-out siren recordings* are mixed into fresh UrbanSound8K street noise
+(ambient classes, every slice already seen in training removed) across a
+sweep of SNR — lower SNR being the distance proxy, a far siren is quiet
+relative to the traffic around the mic:
+
+| condition | AUC | Precision | Recall | F1 |
+|---|---|---|---|---|
+| clean held-out (ceiling) | 1.000 | 1.000 | 1.000 | — |
+| +5 dB SNR (near) | 0.976 | 0.919 | 0.934 | 0.927 |
+| 0 dB SNR | 0.941 | 0.903 | 0.761 | 0.826 |
+| −5 dB SNR (far / heavy traffic) | 0.859 | 0.869 | 0.544 | 0.669 |
+| **overall hard set** | **0.925** | 0.965 | 0.746 | 0.842 |
+
+![Siren detection under street noise](docs/img/audio_hard_eval.png)
+
+The detector **degrades gracefully** — AUC falls from 1.000 to 0.86 only at
+−5 dB, where a distant siren is genuinely buried in traffic. Precision stays
+high (0.87–0.92) throughout; what drops is recall at low SNR (0.54 at −5 dB).
+That is the *right* failure mode here: the system would rather miss a
+far-off siren for a moment than false-preempt, and a real approach gives the
+fusion layer many windows of rising SNR to accumulate belief over — a single
+−5 dB miss does not lose the vehicle. The honest **0.925 overall** is a
+stronger claim than the clean 1.000. (The fixed 0.373 threshold was tuned on
+clean data; raising it for noisy deployment trades the remaining recall for
+even higher precision.) Reproduce with `python audio/hard_eval.py`.
 
 ![CRNN training curves](docs/results/audio_training_curves.png)
 
@@ -332,7 +360,7 @@ the plain `--screenshot` flag captures an offline shell).
 
 | Module | Status | Notes |
 |---|---|---|
-| Audio CRNN siren detection | ✅ Trained | AUC 1.000 on real val — `checkpoints/audio_best.pt` |
+| Audio CRNN siren detection | ✅ Trained | AUC 1.000 clean / **0.925 in street noise** (−5..+5 dB) — `audio/hard_eval.py` |
 | Real siren dataset pipeline | ✅ Complete | `audio/prepare_real_data.py` — 4 free sources, windowed manifests |
 | GCC-PHAT bearing estimation | ✅ Complete | Multi-mic array TDOA |
 | YOLOv11 vision detector | ✅ Trained | mAP@50 0.81 — `vision/weights/yolov11s-ambulance.pt` |
