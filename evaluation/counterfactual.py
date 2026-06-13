@@ -556,6 +556,9 @@ def main() -> None:
                     help="total sim window per run (default 700)")
     ap.add_argument("--trigger-m", type=float, default=220.0,
                     help="arm the cascade when the EV is this close (default 220)")
+    ap.add_argument("--out-tag",   default="",
+                    help="suffix results/plots (e.g. 'perfect80'); keeps the "
+                         "main counterfactual.json + figures untouched")
     ap.add_argument("--gui",       action="store_true")
     args = ap.parse_args()
 
@@ -593,7 +596,8 @@ def main() -> None:
 
     results_dir = ROOT / "evaluation" / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
-    out_json = results_dir / "counterfactual.json"
+    tag = f"_{args.out_tag}" if args.out_tag else ""
+    out_json = results_dir / f"counterfactual{tag}.json"
     slim_pairs = [{k: v for k, v in p.items() if not k.startswith("_")}
                   for p in pairs]
     out_json.write_text(json.dumps(
@@ -603,7 +607,8 @@ def main() -> None:
          "per_run": slim_pairs,
          "by_scale": by_scale}, indent=2))
 
-    plots = make_plots(pairs, ROOT / "docs" / "img")
+    # Only regenerate the canonical README figures for the headline run.
+    plots = [] if args.out_tag else make_plots(pairs, ROOT / "docs" / "img")
 
     print("\n[CF] ====== summary ======")
     for label, per_mode in by_scale.items():

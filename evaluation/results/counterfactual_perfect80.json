@@ -1,0 +1,2019 @@
+{
+  "params": {
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ],
+    "scales": [
+      1.0,
+      2.0,
+      3.0
+    ],
+    "modes": [
+      "baseline",
+      "greenwave"
+    ],
+    "depart_s": 60.0,
+    "duration_s": 700.0,
+    "trigger_m": 80.0
+  },
+  "per_run": [
+    {
+      "seed": 1,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 178.5,
+        "ev_time_loss_s": 96.9,
+        "ev_stops": 4,
+        "ev_stopped_s": 42.3,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 197,
+          "mean_time_loss_s": 36.1,
+          "max_time_loss_s": 161.3,
+          "mean_waiting_s": 9.2
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 114.0,
+        "ev_time_loss_s": 32.5,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.9,
+        "civilians": {
+          "arrived": 223,
+          "mean_time_loss_s": 39.0,
+          "max_time_loss_s": 161.0,
+          "mean_waiting_s": 10.7
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 180.2,
+        "ev_time_loss_s": 98.6,
+        "ev_stops": 4,
+        "ev_stopped_s": 41.0,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 224,
+          "mean_time_loss_s": 38.8,
+          "max_time_loss_s": 157.8,
+          "mean_waiting_s": 10.7
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 112.0,
+        "ev_time_loss_s": 30.4,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.1,
+        "triggered_at": 103.5,
+        "civilians": {
+          "arrived": 196,
+          "mean_time_loss_s": 36.9,
+          "max_time_loss_s": 152.0,
+          "mean_waiting_s": 10.4
+        }
+      }
+    },
+    {
+      "seed": 3,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 176.6,
+        "ev_time_loss_s": 95.0,
+        "ev_stops": 4,
+        "ev_stopped_s": 58.0,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 223,
+          "mean_time_loss_s": 39.4,
+          "max_time_loss_s": 165.8,
+          "mean_waiting_s": 11.2
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 110.0,
+        "ev_time_loss_s": 28.4,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.7,
+        "civilians": {
+          "arrived": 222,
+          "mean_time_loss_s": 40.4,
+          "max_time_loss_s": 165.9,
+          "mean_waiting_s": 12.0
+        }
+      }
+    },
+    {
+      "seed": 4,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 175.7,
+        "ev_time_loss_s": 94.1,
+        "ev_stops": 4,
+        "ev_stopped_s": 53.8,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 187,
+          "mean_time_loss_s": 37.4,
+          "max_time_loss_s": 160.3,
+          "mean_waiting_s": 10.7
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 109.3,
+        "ev_time_loss_s": 27.7,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 103.2,
+        "civilians": {
+          "arrived": 187,
+          "mean_time_loss_s": 38.4,
+          "max_time_loss_s": 155.2,
+          "mean_waiting_s": 11.6
+        }
+      }
+    },
+    {
+      "seed": 5,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 176.6,
+        "ev_time_loss_s": 95.0,
+        "ev_stops": 4,
+        "ev_stopped_s": 56.3,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 221,
+          "mean_time_loss_s": 40.3,
+          "max_time_loss_s": 166.9,
+          "mean_waiting_s": 12.1
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 107.8,
+        "ev_time_loss_s": 26.2,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.1,
+        "triggered_at": 102.9,
+        "civilians": {
+          "arrived": 221,
+          "mean_time_loss_s": 40.7,
+          "max_time_loss_s": 166.9,
+          "mean_waiting_s": 12.5
+        }
+      }
+    },
+    {
+      "seed": 6,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 175.7,
+        "ev_time_loss_s": 94.1,
+        "ev_stops": 4,
+        "ev_stopped_s": 55.1,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 223,
+          "mean_time_loss_s": 38.7,
+          "max_time_loss_s": 173.7,
+          "mean_waiting_s": 10.6
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 106.7,
+        "ev_time_loss_s": 25.1,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.4,
+        "civilians": {
+          "arrived": 223,
+          "mean_time_loss_s": 38.6,
+          "max_time_loss_s": 159.1,
+          "mean_waiting_s": 10.7
+        }
+      }
+    },
+    {
+      "seed": 7,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 175.6,
+        "ev_time_loss_s": 94.1,
+        "ev_stops": 4,
+        "ev_stopped_s": 55.7,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 225,
+          "mean_time_loss_s": 38.4,
+          "max_time_loss_s": 180.3,
+          "mean_waiting_s": 10.7
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 108.1,
+        "ev_time_loss_s": 26.6,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.1,
+        "civilians": {
+          "arrived": 217,
+          "mean_time_loss_s": 39.6,
+          "max_time_loss_s": 171.5,
+          "mean_waiting_s": 11.9
+        }
+      }
+    },
+    {
+      "seed": 8,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 175.8,
+        "ev_time_loss_s": 94.2,
+        "ev_stops": 4,
+        "ev_stopped_s": 55.2,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 224,
+          "mean_time_loss_s": 39.9,
+          "max_time_loss_s": 170.7,
+          "mean_waiting_s": 11.7
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 128.5,
+        "ev_time_loss_s": 46.9,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.5,
+        "civilians": {
+          "arrived": 224,
+          "mean_time_loss_s": 40.6,
+          "max_time_loss_s": 157.9,
+          "mean_waiting_s": 12.3
+        }
+      }
+    },
+    {
+      "seed": 9,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 175.6,
+        "ev_time_loss_s": 94.0,
+        "ev_stops": 4,
+        "ev_stopped_s": 54.9,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 186,
+          "mean_time_loss_s": 38.1,
+          "max_time_loss_s": 169.6,
+          "mean_waiting_s": 11.3
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 111.7,
+        "ev_time_loss_s": 30.0,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.5,
+        "civilians": {
+          "arrived": 186,
+          "mean_time_loss_s": 38.7,
+          "max_time_loss_s": 150.1,
+          "mean_waiting_s": 11.9
+        }
+      }
+    },
+    {
+      "seed": 10,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 175.5,
+        "ev_time_loss_s": 93.8,
+        "ev_stops": 4,
+        "ev_stopped_s": 52.9,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 222,
+          "mean_time_loss_s": 38.0,
+          "max_time_loss_s": 163.8,
+          "mean_waiting_s": 10.6
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 118.5,
+        "ev_time_loss_s": 36.9,
+        "ev_stops": 2,
+        "ev_stopped_s": 3.7,
+        "triggered_at": 103.4,
+        "civilians": {
+          "arrived": 223,
+          "mean_time_loss_s": 39.3,
+          "max_time_loss_s": 163.6,
+          "mean_waiting_s": 11.4
+        }
+      }
+    },
+    {
+      "seed": 11,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 175.7,
+        "ev_time_loss_s": 94.0,
+        "ev_stops": 4,
+        "ev_stopped_s": 54.6,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 186,
+          "mean_time_loss_s": 36.6,
+          "max_time_loss_s": 165.5,
+          "mean_waiting_s": 10.1
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 122.5,
+        "ev_time_loss_s": 40.8,
+        "ev_stops": 2,
+        "ev_stopped_s": 0.8,
+        "triggered_at": 102.7,
+        "civilians": {
+          "arrived": 186,
+          "mean_time_loss_s": 37.4,
+          "max_time_loss_s": 158.6,
+          "mean_waiting_s": 10.7
+        }
+      }
+    },
+    {
+      "seed": 12,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 175.7,
+        "ev_time_loss_s": 94.1,
+        "ev_stops": 5,
+        "ev_stopped_s": 46.3,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 185,
+          "mean_time_loss_s": 36.6,
+          "max_time_loss_s": 160.0,
+          "mean_waiting_s": 10.7
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 112.7,
+        "ev_time_loss_s": 31.1,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 103.7,
+        "civilians": {
+          "arrived": 185,
+          "mean_time_loss_s": 38.5,
+          "max_time_loss_s": 162.5,
+          "mean_waiting_s": 12.0
+        }
+      }
+    },
+    {
+      "seed": 13,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 176.6,
+        "ev_time_loss_s": 95.0,
+        "ev_stops": 5,
+        "ev_stopped_s": 54.3,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 220,
+          "mean_time_loss_s": 38.1,
+          "max_time_loss_s": 171.0,
+          "mean_waiting_s": 10.3
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 114.5,
+        "ev_time_loss_s": 32.9,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.5,
+        "civilians": {
+          "arrived": 220,
+          "mean_time_loss_s": 38.7,
+          "max_time_loss_s": 168.3,
+          "mean_waiting_s": 11.0
+        }
+      }
+    },
+    {
+      "seed": 14,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 176.6,
+        "ev_time_loss_s": 95.0,
+        "ev_stops": 4,
+        "ev_stopped_s": 55.5,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 217,
+          "mean_time_loss_s": 38.0,
+          "max_time_loss_s": 157.0,
+          "mean_waiting_s": 10.9
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 112.9,
+        "ev_time_loss_s": 31.3,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 103.8,
+        "civilians": {
+          "arrived": 225,
+          "mean_time_loss_s": 38.4,
+          "max_time_loss_s": 155.8,
+          "mean_waiting_s": 11.0
+        }
+      }
+    },
+    {
+      "seed": 15,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 176.5,
+        "ev_time_loss_s": 94.8,
+        "ev_stops": 4,
+        "ev_stopped_s": 57.2,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 187,
+          "mean_time_loss_s": 35.6,
+          "max_time_loss_s": 159.6,
+          "mean_waiting_s": 9.2
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 108.9,
+        "ev_time_loss_s": 27.4,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.1,
+        "triggered_at": 103.0,
+        "civilians": {
+          "arrived": 187,
+          "mean_time_loss_s": 37.2,
+          "max_time_loss_s": 160.6,
+          "mean_waiting_s": 10.5
+        }
+      }
+    },
+    {
+      "seed": 16,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 175.7,
+        "ev_time_loss_s": 94.1,
+        "ev_stops": 4,
+        "ev_stopped_s": 53.7,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 222,
+          "mean_time_loss_s": 38.9,
+          "max_time_loss_s": 178.7,
+          "mean_waiting_s": 10.8
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 113.6,
+        "ev_time_loss_s": 31.9,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 103.2,
+        "civilians": {
+          "arrived": 222,
+          "mean_time_loss_s": 39.2,
+          "max_time_loss_s": 156.6,
+          "mean_waiting_s": 11.0
+        }
+      }
+    },
+    {
+      "seed": 17,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 176.5,
+        "ev_time_loss_s": 94.9,
+        "ev_stops": 4,
+        "ev_stopped_s": 57.7,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 215,
+          "mean_time_loss_s": 37.6,
+          "max_time_loss_s": 161.3,
+          "mean_waiting_s": 9.9
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 115.3,
+        "ev_time_loss_s": 33.8,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.9,
+        "civilians": {
+          "arrived": 214,
+          "mean_time_loss_s": 39.1,
+          "max_time_loss_s": 158.7,
+          "mean_waiting_s": 11.2
+        }
+      }
+    },
+    {
+      "seed": 18,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 175.7,
+        "ev_time_loss_s": 94.1,
+        "ev_stops": 4,
+        "ev_stopped_s": 53.4,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 197,
+          "mean_time_loss_s": 36.9,
+          "max_time_loss_s": 178.8,
+          "mean_waiting_s": 9.6
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 114.9,
+        "ev_time_loss_s": 33.2,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 103.3,
+        "civilians": {
+          "arrived": 198,
+          "mean_time_loss_s": 38.4,
+          "max_time_loss_s": 163.0,
+          "mean_waiting_s": 11.0
+        }
+      }
+    },
+    {
+      "seed": 19,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 175.7,
+        "ev_time_loss_s": 94.1,
+        "ev_stops": 4,
+        "ev_stopped_s": 53.5,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 222,
+          "mean_time_loss_s": 39.0,
+          "max_time_loss_s": 168.0,
+          "mean_waiting_s": 11.4
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 110.3,
+        "ev_time_loss_s": 28.7,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.1,
+        "triggered_at": 103.2,
+        "civilians": {
+          "arrived": 222,
+          "mean_time_loss_s": 38.4,
+          "max_time_loss_s": 152.8,
+          "mean_waiting_s": 11.0
+        }
+      }
+    },
+    {
+      "seed": 20,
+      "scale": 1.0,
+      "baseline": {
+        "ev_travel_s": 179.3,
+        "ev_time_loss_s": 97.8,
+        "ev_stops": 4,
+        "ev_stopped_s": 41.6,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 219,
+          "mean_time_loss_s": 38.9,
+          "max_time_loss_s": 166.2,
+          "mean_waiting_s": 10.9
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 115.4,
+        "ev_time_loss_s": 33.8,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 103.3,
+        "civilians": {
+          "arrived": 192,
+          "mean_time_loss_s": 38.9,
+          "max_time_loss_s": 164.3,
+          "mean_waiting_s": 11.5
+        }
+      }
+    },
+    {
+      "seed": 1,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 179.5,
+        "ev_time_loss_s": 97.8,
+        "ev_stops": 4,
+        "ev_stopped_s": 54.7,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 369,
+          "mean_time_loss_s": 47.7,
+          "max_time_loss_s": 246.1,
+          "mean_waiting_s": 13.5
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 128.4,
+        "ev_time_loss_s": 46.8,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.6,
+        "civilians": {
+          "arrived": 385,
+          "mean_time_loss_s": 49.0,
+          "max_time_loss_s": 186.7,
+          "mean_waiting_s": 14.4
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 178.3,
+        "ev_time_loss_s": 96.7,
+        "ev_stops": 4,
+        "ev_stopped_s": 55.2,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 365,
+          "mean_time_loss_s": 45.8,
+          "max_time_loss_s": 222.2,
+          "mean_waiting_s": 12.7
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 125.5,
+        "ev_time_loss_s": 43.9,
+        "ev_stops": 2,
+        "ev_stopped_s": 5.3,
+        "triggered_at": 102.6,
+        "civilians": {
+          "arrived": 361,
+          "mean_time_loss_s": 47.1,
+          "max_time_loss_s": 172.5,
+          "mean_waiting_s": 13.5
+        }
+      }
+    },
+    {
+      "seed": 3,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 186.4,
+        "ev_time_loss_s": 104.8,
+        "ev_stops": 5,
+        "ev_stopped_s": 46.6,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 368,
+          "mean_time_loss_s": 47.9,
+          "max_time_loss_s": 233.2,
+          "mean_waiting_s": 13.1
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 128.8,
+        "ev_time_loss_s": 47.2,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.9,
+        "civilians": {
+          "arrived": 370,
+          "mean_time_loss_s": 47.5,
+          "max_time_loss_s": 196.1,
+          "mean_waiting_s": 13.5
+        }
+      }
+    },
+    {
+      "seed": 4,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 178.4,
+        "ev_time_loss_s": 96.8,
+        "ev_stops": 4,
+        "ev_stopped_s": 54.5,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 369,
+          "mean_time_loss_s": 47.5,
+          "max_time_loss_s": 223.6,
+          "mean_waiting_s": 13.4
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 127.8,
+        "ev_time_loss_s": 46.2,
+        "ev_stops": 2,
+        "ev_stopped_s": 1.0,
+        "triggered_at": 102.9,
+        "civilians": {
+          "arrived": 362,
+          "mean_time_loss_s": 48.7,
+          "max_time_loss_s": 170.0,
+          "mean_waiting_s": 14.7
+        }
+      }
+    },
+    {
+      "seed": 5,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 179.1,
+        "ev_time_loss_s": 97.5,
+        "ev_stops": 4,
+        "ev_stopped_s": 58.7,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 363,
+          "mean_time_loss_s": 46.0,
+          "max_time_loss_s": 249.8,
+          "mean_waiting_s": 13.2
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 137.0,
+        "ev_time_loss_s": 55.3,
+        "ev_stops": 2,
+        "ev_stopped_s": 11.1,
+        "triggered_at": 103.9,
+        "civilians": {
+          "arrived": 367,
+          "mean_time_loss_s": 48.1,
+          "max_time_loss_s": 185.6,
+          "mean_waiting_s": 14.5
+        }
+      }
+    },
+    {
+      "seed": 6,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 180.1,
+        "ev_time_loss_s": 98.6,
+        "ev_stops": 4,
+        "ev_stopped_s": 56.5,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 367,
+          "mean_time_loss_s": 47.9,
+          "max_time_loss_s": 255.0,
+          "mean_waiting_s": 14.3
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 131.8,
+        "ev_time_loss_s": 50.2,
+        "ev_stops": 2,
+        "ev_stopped_s": 6.2,
+        "triggered_at": 102.5,
+        "civilians": {
+          "arrived": 362,
+          "mean_time_loss_s": 48.1,
+          "max_time_loss_s": 172.3,
+          "mean_waiting_s": 14.3
+        }
+      }
+    },
+    {
+      "seed": 7,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 180.4,
+        "ev_time_loss_s": 98.8,
+        "ev_stops": 4,
+        "ev_stopped_s": 56.0,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 365,
+          "mean_time_loss_s": 48.0,
+          "max_time_loss_s": 234.0,
+          "mean_waiting_s": 14.2
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 106.8,
+        "ev_time_loss_s": 25.2,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.7,
+        "civilians": {
+          "arrived": 369,
+          "mean_time_loss_s": 47.9,
+          "max_time_loss_s": 179.6,
+          "mean_waiting_s": 14.1
+        }
+      }
+    },
+    {
+      "seed": 8,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 180.1,
+        "ev_time_loss_s": 98.5,
+        "ev_stops": 4,
+        "ev_stopped_s": 55.0,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 363,
+          "mean_time_loss_s": 47.1,
+          "max_time_loss_s": 222.2,
+          "mean_waiting_s": 13.4
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 112.9,
+        "ev_time_loss_s": 31.2,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.8,
+        "civilians": {
+          "arrived": 369,
+          "mean_time_loss_s": 47.1,
+          "max_time_loss_s": 174.6,
+          "mean_waiting_s": 13.6
+        }
+      }
+    },
+    {
+      "seed": 9,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 189.3,
+        "ev_time_loss_s": 107.8,
+        "ev_stops": 4,
+        "ev_stopped_s": 71.5,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 360,
+          "mean_time_loss_s": 46.0,
+          "max_time_loss_s": 250.2,
+          "mean_waiting_s": 13.1
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 134.8,
+        "ev_time_loss_s": 53.2,
+        "ev_stops": 3,
+        "ev_stopped_s": 3.7,
+        "triggered_at": 103.2,
+        "civilians": {
+          "arrived": 365,
+          "mean_time_loss_s": 45.7,
+          "max_time_loss_s": 168.6,
+          "mean_waiting_s": 12.5
+        }
+      }
+    },
+    {
+      "seed": 10,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 179.1,
+        "ev_time_loss_s": 97.5,
+        "ev_stops": 4,
+        "ev_stopped_s": 60.5,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 364,
+          "mean_time_loss_s": 46.6,
+          "max_time_loss_s": 221.6,
+          "mean_waiting_s": 13.0
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 122.5,
+        "ev_time_loss_s": 41.0,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.1,
+        "triggered_at": 103.1,
+        "civilians": {
+          "arrived": 365,
+          "mean_time_loss_s": 46.6,
+          "max_time_loss_s": 175.9,
+          "mean_waiting_s": 13.3
+        }
+      }
+    },
+    {
+      "seed": 11,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 188.1,
+        "ev_time_loss_s": 106.5,
+        "ev_stops": 4,
+        "ev_stopped_s": 69.9,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 400,
+          "mean_time_loss_s": 52.4,
+          "max_time_loss_s": 257.7,
+          "mean_waiting_s": 16.6
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 120.7,
+        "ev_time_loss_s": 39.1,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 103.3,
+        "civilians": {
+          "arrived": 383,
+          "mean_time_loss_s": 48.3,
+          "max_time_loss_s": 185.7,
+          "mean_waiting_s": 14.2
+        }
+      }
+    },
+    {
+      "seed": 12,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 176.6,
+        "ev_time_loss_s": 95.0,
+        "ev_stops": 5,
+        "ev_stopped_s": 51.5,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 364,
+          "mean_time_loss_s": 47.8,
+          "max_time_loss_s": 259.6,
+          "mean_waiting_s": 14.4
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 119.8,
+        "ev_time_loss_s": 38.1,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.1,
+        "triggered_at": 102.1,
+        "civilians": {
+          "arrived": 364,
+          "mean_time_loss_s": 46.8,
+          "max_time_loss_s": 173.1,
+          "mean_waiting_s": 13.2
+        }
+      }
+    },
+    {
+      "seed": 13,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 179.8,
+        "ev_time_loss_s": 98.2,
+        "ev_stops": 4,
+        "ev_stopped_s": 60.6,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 401,
+          "mean_time_loss_s": 50.0,
+          "max_time_loss_s": 241.1,
+          "mean_waiting_s": 15.4
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 127.1,
+        "ev_time_loss_s": 45.6,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.8,
+        "civilians": {
+          "arrived": 436,
+          "mean_time_loss_s": 52.5,
+          "max_time_loss_s": 202.2,
+          "mean_waiting_s": 16.7
+        }
+      }
+    },
+    {
+      "seed": 14,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 181.8,
+        "ev_time_loss_s": 100.2,
+        "ev_stops": 5,
+        "ev_stopped_s": 50.4,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 361,
+          "mean_time_loss_s": 46.7,
+          "max_time_loss_s": 233.1,
+          "mean_waiting_s": 12.9
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 128.6,
+        "ev_time_loss_s": 47.1,
+        "ev_stops": 2,
+        "ev_stopped_s": 3.4,
+        "triggered_at": 103.1,
+        "civilians": {
+          "arrived": 362,
+          "mean_time_loss_s": 45.4,
+          "max_time_loss_s": 168.4,
+          "mean_waiting_s": 12.5
+        }
+      }
+    },
+    {
+      "seed": 15,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 179.0,
+        "ev_time_loss_s": 97.5,
+        "ev_stops": 4,
+        "ev_stopped_s": 57.7,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 364,
+          "mean_time_loss_s": 46.2,
+          "max_time_loss_s": 217.2,
+          "mean_waiting_s": 12.7
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 117.9,
+        "ev_time_loss_s": 36.3,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.1,
+        "triggered_at": 102.7,
+        "civilians": {
+          "arrived": 366,
+          "mean_time_loss_s": 47.5,
+          "max_time_loss_s": 180.1,
+          "mean_waiting_s": 14.1
+        }
+      }
+    },
+    {
+      "seed": 16,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 185.8,
+        "ev_time_loss_s": 104.2,
+        "ev_stops": 4,
+        "ev_stopped_s": 68.1,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 370,
+          "mean_time_loss_s": 48.0,
+          "max_time_loss_s": 260.9,
+          "mean_waiting_s": 14.1
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 126.6,
+        "ev_time_loss_s": 45.0,
+        "ev_stops": 2,
+        "ev_stopped_s": 1.9,
+        "triggered_at": 103.0,
+        "civilians": {
+          "arrived": 370,
+          "mean_time_loss_s": 47.8,
+          "max_time_loss_s": 169.0,
+          "mean_waiting_s": 14.1
+        }
+      }
+    },
+    {
+      "seed": 17,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 179.8,
+        "ev_time_loss_s": 98.2,
+        "ev_stops": 4,
+        "ev_stopped_s": 53.1,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 374,
+          "mean_time_loss_s": 45.9,
+          "max_time_loss_s": 216.3,
+          "mean_waiting_s": 12.3
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 121.5,
+        "ev_time_loss_s": 40.0,
+        "ev_stops": 2,
+        "ev_stopped_s": 6.8,
+        "triggered_at": 103.5,
+        "civilians": {
+          "arrived": 366,
+          "mean_time_loss_s": 47.4,
+          "max_time_loss_s": 190.8,
+          "mean_waiting_s": 13.6
+        }
+      }
+    },
+    {
+      "seed": 18,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 181.5,
+        "ev_time_loss_s": 99.8,
+        "ev_stops": 4,
+        "ev_stopped_s": 51.7,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 425,
+          "mean_time_loss_s": 53.6,
+          "max_time_loss_s": 252.0,
+          "mean_waiting_s": 15.9
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 133.3,
+        "ev_time_loss_s": 51.6,
+        "ev_stops": 2,
+        "ev_stopped_s": 2.3,
+        "triggered_at": 104.7,
+        "civilians": {
+          "arrived": 391,
+          "mean_time_loss_s": 50.9,
+          "max_time_loss_s": 250.8,
+          "mean_waiting_s": 15.9
+        }
+      }
+    },
+    {
+      "seed": 19,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 180.0,
+        "ev_time_loss_s": 98.5,
+        "ev_stops": 5,
+        "ev_stopped_s": 53.8,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 388,
+          "mean_time_loss_s": 48.5,
+          "max_time_loss_s": 239.0,
+          "mean_waiting_s": 14.2
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 133.2,
+        "ev_time_loss_s": 51.7,
+        "ev_stops": 2,
+        "ev_stopped_s": 8.8,
+        "triggered_at": 102.5,
+        "civilians": {
+          "arrived": 389,
+          "mean_time_loss_s": 52.1,
+          "max_time_loss_s": 201.1,
+          "mean_waiting_s": 17.3
+        }
+      }
+    },
+    {
+      "seed": 20,
+      "scale": 2.0,
+      "baseline": {
+        "ev_travel_s": 178.6,
+        "ev_time_loss_s": 97.0,
+        "ev_stops": 4,
+        "ev_stopped_s": 57.0,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 364,
+          "mean_time_loss_s": 45.3,
+          "max_time_loss_s": 176.1,
+          "mean_waiting_s": 11.3
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 107.6,
+        "ev_time_loss_s": 25.7,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.6,
+        "civilians": {
+          "arrived": 365,
+          "mean_time_loss_s": 48.5,
+          "max_time_loss_s": 184.1,
+          "mean_waiting_s": 13.7
+        }
+      }
+    },
+    {
+      "seed": 1,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 182.5,
+        "ev_time_loss_s": 100.9,
+        "ev_stops": 5,
+        "ev_stopped_s": 42.9,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 494,
+          "mean_time_loss_s": 68.1,
+          "max_time_loss_s": 431.8,
+          "mean_waiting_s": 25.5
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 116.4,
+        "ev_time_loss_s": 34.7,
+        "ev_stops": 2,
+        "ev_stopped_s": 1.2,
+        "triggered_at": 103.1,
+        "civilians": {
+          "arrived": 506,
+          "mean_time_loss_s": 70.5,
+          "max_time_loss_s": 431.4,
+          "mean_waiting_s": 26.2
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 178.6,
+        "ev_time_loss_s": 97.0,
+        "ev_stops": 4,
+        "ev_stopped_s": 51.5,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 507,
+          "mean_time_loss_s": 71.6,
+          "max_time_loss_s": 523.2,
+          "mean_waiting_s": 28.0
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 142.5,
+        "ev_time_loss_s": 60.9,
+        "ev_stops": 3,
+        "ev_stopped_s": 15.7,
+        "triggered_at": 103.6,
+        "civilians": {
+          "arrived": 515,
+          "mean_time_loss_s": 68.9,
+          "max_time_loss_s": 302.2,
+          "mean_waiting_s": 24.4
+        }
+      }
+    },
+    {
+      "seed": 3,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 191.7,
+        "ev_time_loss_s": 110.1,
+        "ev_stops": 5,
+        "ev_stopped_s": 48.0,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 537,
+          "mean_time_loss_s": 69.7,
+          "max_time_loss_s": 392.2,
+          "mean_waiting_s": 23.5
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 110.1,
+        "ev_time_loss_s": 28.6,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 103.1,
+        "civilians": {
+          "arrived": 541,
+          "mean_time_loss_s": 75.8,
+          "max_time_loss_s": 522.2,
+          "mean_waiting_s": 29.4
+        }
+      }
+    },
+    {
+      "seed": 4,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 180.7,
+        "ev_time_loss_s": 99.1,
+        "ev_stops": 4,
+        "ev_stopped_s": 53.5,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 513,
+          "mean_time_loss_s": 68.9,
+          "max_time_loss_s": 333.7,
+          "mean_waiting_s": 25.0
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 134.2,
+        "ev_time_loss_s": 52.6,
+        "ev_stops": 2,
+        "ev_stopped_s": 7.9,
+        "triggered_at": 103.8,
+        "civilians": {
+          "arrived": 508,
+          "mean_time_loss_s": 68.2,
+          "max_time_loss_s": 488.0,
+          "mean_waiting_s": 23.9
+        }
+      }
+    },
+    {
+      "seed": 5,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 182.4,
+        "ev_time_loss_s": 100.7,
+        "ev_stops": 5,
+        "ev_stopped_s": 44.4,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 507,
+          "mean_time_loss_s": 66.4,
+          "max_time_loss_s": 308.3,
+          "mean_waiting_s": 23.7
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 125.0,
+        "ev_time_loss_s": 43.2,
+        "ev_stops": 31,
+        "ev_stopped_s": 8.1,
+        "triggered_at": 102.8,
+        "civilians": {
+          "arrived": 515,
+          "mean_time_loss_s": 69.0,
+          "max_time_loss_s": 344.8,
+          "mean_waiting_s": 24.1
+        }
+      }
+    },
+    {
+      "seed": 6,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 182.4,
+        "ev_time_loss_s": 100.8,
+        "ev_stops": 4,
+        "ev_stopped_s": 39.7,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 543,
+          "mean_time_loss_s": 74.0,
+          "max_time_loss_s": 309.8,
+          "mean_waiting_s": 27.6
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 145.9,
+        "ev_time_loss_s": 64.3,
+        "ev_stops": 2,
+        "ev_stopped_s": 8.8,
+        "triggered_at": 104.0,
+        "civilians": {
+          "arrived": 551,
+          "mean_time_loss_s": 72.4,
+          "max_time_loss_s": 326.5,
+          "mean_waiting_s": 25.7
+        }
+      }
+    },
+    {
+      "seed": 7,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 184.4,
+        "ev_time_loss_s": 102.8,
+        "ev_stops": 5,
+        "ev_stopped_s": 49.2,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 513,
+          "mean_time_loss_s": 70.7,
+          "max_time_loss_s": 316.2,
+          "mean_waiting_s": 25.9
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 132.8,
+        "ev_time_loss_s": 51.2,
+        "ev_stops": 2,
+        "ev_stopped_s": 6.0,
+        "triggered_at": 102.8,
+        "civilians": {
+          "arrived": 513,
+          "mean_time_loss_s": 69.0,
+          "max_time_loss_s": 266.8,
+          "mean_waiting_s": 23.3
+        }
+      }
+    },
+    {
+      "seed": 8,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 181.7,
+        "ev_time_loss_s": 100.1,
+        "ev_stops": 5,
+        "ev_stopped_s": 40.2,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 510,
+          "mean_time_loss_s": 68.9,
+          "max_time_loss_s": 287.0,
+          "mean_waiting_s": 25.9
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 139.9,
+        "ev_time_loss_s": 58.3,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 104.1,
+        "civilians": {
+          "arrived": 513,
+          "mean_time_loss_s": 69.6,
+          "max_time_loss_s": 489.3,
+          "mean_waiting_s": 25.9
+        }
+      }
+    },
+    {
+      "seed": 9,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 195.9,
+        "ev_time_loss_s": 114.2,
+        "ev_stops": 5,
+        "ev_stopped_s": 63.8,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 505,
+          "mean_time_loss_s": 70.0,
+          "max_time_loss_s": 369.7,
+          "mean_waiting_s": 25.4
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 121.6,
+        "ev_time_loss_s": 39.9,
+        "ev_stops": 3,
+        "ev_stopped_s": 3.7,
+        "triggered_at": 102.1,
+        "civilians": {
+          "arrived": 515,
+          "mean_time_loss_s": 66.2,
+          "max_time_loss_s": 264.2,
+          "mean_waiting_s": 21.2
+        }
+      }
+    },
+    {
+      "seed": 10,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 266.6,
+        "ev_time_loss_s": 185.0,
+        "ev_stops": 6,
+        "ev_stopped_s": 129.5,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 522,
+          "mean_time_loss_s": 65.9,
+          "max_time_loss_s": 259.5,
+          "mean_waiting_s": 21.6
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 133.7,
+        "ev_time_loss_s": 52.1,
+        "ev_stops": 2,
+        "ev_stopped_s": 1.3,
+        "triggered_at": 102.7,
+        "civilians": {
+          "arrived": 506,
+          "mean_time_loss_s": 67.4,
+          "max_time_loss_s": 281.4,
+          "mean_waiting_s": 23.6
+        }
+      }
+    },
+    {
+      "seed": 11,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 266.6,
+        "ev_time_loss_s": 185.0,
+        "ev_stops": 6,
+        "ev_stopped_s": 129.8,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 516,
+          "mean_time_loss_s": 71.4,
+          "max_time_loss_s": 369.3,
+          "mean_waiting_s": 28.5
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 106.9,
+        "ev_time_loss_s": 25.1,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.6,
+        "civilians": {
+          "arrived": 522,
+          "mean_time_loss_s": 65.8,
+          "max_time_loss_s": 293.4,
+          "mean_waiting_s": 22.8
+        }
+      }
+    },
+    {
+      "seed": 12,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 179.0,
+        "ev_time_loss_s": 97.5,
+        "ev_stops": 4,
+        "ev_stopped_s": 54.8,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 519,
+          "mean_time_loss_s": 70.9,
+          "max_time_loss_s": 382.4,
+          "mean_waiting_s": 27.3
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 134.7,
+        "ev_time_loss_s": 53.1,
+        "ev_stops": 2,
+        "ev_stopped_s": 3.6,
+        "triggered_at": 103.5,
+        "civilians": {
+          "arrived": 516,
+          "mean_time_loss_s": 66.9,
+          "max_time_loss_s": 302.8,
+          "mean_waiting_s": 22.2
+        }
+      }
+    },
+    {
+      "seed": 13,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 179.1,
+        "ev_time_loss_s": 97.6,
+        "ev_stops": 4,
+        "ev_stopped_s": 49.4,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 495,
+          "mean_time_loss_s": 65.9,
+          "max_time_loss_s": 415.1,
+          "mean_waiting_s": 22.8
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 141.1,
+        "ev_time_loss_s": 59.5,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 103.9,
+        "civilians": {
+          "arrived": 510,
+          "mean_time_loss_s": 68.5,
+          "max_time_loss_s": 380.4,
+          "mean_waiting_s": 24.2
+        }
+      }
+    },
+    {
+      "seed": 14,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 194.1,
+        "ev_time_loss_s": 112.5,
+        "ev_stops": 5,
+        "ev_stopped_s": 63.1,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 511,
+          "mean_time_loss_s": 71.1,
+          "max_time_loss_s": 354.5,
+          "mean_waiting_s": 27.0
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 140.4,
+        "ev_time_loss_s": 58.8,
+        "ev_stops": 2,
+        "ev_stopped_s": 8.8,
+        "triggered_at": 103.3,
+        "civilians": {
+          "arrived": 511,
+          "mean_time_loss_s": 68.4,
+          "max_time_loss_s": 285.7,
+          "mean_waiting_s": 23.5
+        }
+      }
+    },
+    {
+      "seed": 15,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 270.0,
+        "ev_time_loss_s": 188.4,
+        "ev_stops": 7,
+        "ev_stopped_s": 111.8,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 497,
+          "mean_time_loss_s": 85.3,
+          "max_time_loss_s": 517.4,
+          "mean_waiting_s": 35.9
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 118.5,
+        "ev_time_loss_s": 36.8,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.3,
+        "civilians": {
+          "arrived": 512,
+          "mean_time_loss_s": 68.6,
+          "max_time_loss_s": 313.0,
+          "mean_waiting_s": 23.9
+        }
+      }
+    },
+    {
+      "seed": 16,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 191.5,
+        "ev_time_loss_s": 110.0,
+        "ev_stops": 4,
+        "ev_stopped_s": 72.3,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 517,
+          "mean_time_loss_s": 69.3,
+          "max_time_loss_s": 295.3,
+          "mean_waiting_s": 25.7
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 133.1,
+        "ev_time_loss_s": 51.5,
+        "ev_stops": 2,
+        "ev_stopped_s": 4.7,
+        "triggered_at": 103.4,
+        "civilians": {
+          "arrived": 513,
+          "mean_time_loss_s": 69.7,
+          "max_time_loss_s": 324.8,
+          "mean_waiting_s": 23.7
+        }
+      }
+    },
+    {
+      "seed": 17,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 179.1,
+        "ev_time_loss_s": 97.4,
+        "ev_stops": 4,
+        "ev_stopped_s": 51.7,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 517,
+          "mean_time_loss_s": 68.4,
+          "max_time_loss_s": 269.1,
+          "mean_waiting_s": 25.0
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 149.9,
+        "ev_time_loss_s": 68.2,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 104.2,
+        "civilians": {
+          "arrived": 503,
+          "mean_time_loss_s": 73.4,
+          "max_time_loss_s": 556.2,
+          "mean_waiting_s": 26.7
+        }
+      }
+    },
+    {
+      "seed": 18,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 190.4,
+        "ev_time_loss_s": 108.8,
+        "ev_stops": 4,
+        "ev_stopped_s": 69.8,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 520,
+          "mean_time_loss_s": 65.4,
+          "max_time_loss_s": 262.3,
+          "mean_waiting_s": 21.6
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 131.8,
+        "ev_time_loss_s": 50.2,
+        "ev_stops": 3,
+        "ev_stopped_s": 15.9,
+        "triggered_at": 103.7,
+        "civilians": {
+          "arrived": 517,
+          "mean_time_loss_s": 67.4,
+          "max_time_loss_s": 226.8,
+          "mean_waiting_s": 23.3
+        }
+      }
+    },
+    {
+      "seed": 19,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 179.5,
+        "ev_time_loss_s": 97.9,
+        "ev_stops": 5,
+        "ev_stopped_s": 42.1,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 508,
+          "mean_time_loss_s": 66.6,
+          "max_time_loss_s": 296.3,
+          "mean_waiting_s": 24.5
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 125.8,
+        "ev_time_loss_s": 44.1,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 103.3,
+        "civilians": {
+          "arrived": 514,
+          "mean_time_loss_s": 67.6,
+          "max_time_loss_s": 311.2,
+          "mean_waiting_s": 24.3
+        }
+      }
+    },
+    {
+      "seed": 20,
+      "scale": 3.0,
+      "baseline": {
+        "ev_travel_s": 196.3,
+        "ev_time_loss_s": 114.8,
+        "ev_stops": 5,
+        "ev_stopped_s": 59.1,
+        "triggered_at": null,
+        "civilians": {
+          "arrived": 516,
+          "mean_time_loss_s": 70.5,
+          "max_time_loss_s": 324.0,
+          "mean_waiting_s": 25.7
+        }
+      },
+      "greenwave": {
+        "ev_travel_s": 116.7,
+        "ev_time_loss_s": 35.1,
+        "ev_stops": 1,
+        "ev_stopped_s": 0.2,
+        "triggered_at": 102.7,
+        "civilians": {
+          "arrived": 510,
+          "mean_time_loss_s": 70.8,
+          "max_time_loss_s": 307.9,
+          "mean_waiting_s": 24.8
+        }
+      }
+    }
+  ],
+  "by_scale": {
+    "1x": {
+      "greenwave": {
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "ev_travel_baseline_s": {
+          "mean": 176.5,
+          "stdev": 1.3
+        },
+        "ev_travel_greenwave_s": {
+          "mean": 113.4,
+          "stdev": 5.2
+        },
+        "ev_time_saved_s": {
+          "mean": 63.1,
+          "stdev": 5.4
+        },
+        "ev_time_saved_pct": 35.8,
+        "ev_stops_baseline": {
+          "mean": 4.1,
+          "stdev": 0.3
+        },
+        "ev_stops_greenwave": {
+          "mean": 1.1,
+          "stdev": 0.3
+        },
+        "civilian_mean_loss_baseline_s": {
+          "mean": 38.1,
+          "stdev": 1.3
+        },
+        "civilian_mean_loss_greenwave_s": {
+          "mean": 38.8,
+          "stdev": 1.0
+        },
+        "civilian_extra_loss_s": {
+          "mean": 0.8,
+          "stdev": 1.0
+        }
+      }
+    },
+    "2x": {
+      "greenwave": {
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "ev_travel_baseline_s": {
+          "mean": 181.1,
+          "stdev": 3.5
+        },
+        "ev_travel_greenwave_s": {
+          "mean": 124.6,
+          "stdev": 8.5
+        },
+        "ev_time_saved_s": {
+          "mean": 56.5,
+          "stdev": 8.3
+        },
+        "ev_time_saved_pct": 31.2,
+        "ev_stops_baseline": {
+          "mean": 4.2,
+          "stdev": 0.4
+        },
+        "ev_stops_greenwave": {
+          "mean": 1.6,
+          "stdev": 0.6
+        },
+        "civilian_mean_loss_baseline_s": {
+          "mean": 47.7,
+          "stdev": 2.1
+        },
+        "civilian_mean_loss_greenwave_s": {
+          "mean": 48.1,
+          "stdev": 1.8
+        },
+        "civilian_extra_loss_s": {
+          "mean": 0.4,
+          "stdev": 1.9
+        }
+      }
+    },
+    "3x": {
+      "greenwave": {
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "ev_travel_baseline_s": {
+          "mean": 197.6,
+          "stdev": 30.8
+        },
+        "ev_travel_greenwave_s": {
+          "mean": 130.1,
+          "stdev": 12.0
+        },
+        "ev_time_saved_s": {
+          "mean": 67.6,
+          "stdev": 37.7
+        },
+        "ev_time_saved_pct": 34.2,
+        "ev_stops_baseline": {
+          "mean": 4.8,
+          "stdev": 0.8
+        },
+        "ev_stops_greenwave": {
+          "mean": 3.2,
+          "stdev": 6.6
+        },
+        "civilian_mean_loss_baseline_s": {
+          "mean": 70.0,
+          "stdev": 4.3
+        },
+        "civilian_mean_loss_greenwave_s": {
+          "mean": 69.2,
+          "stdev": 2.4
+        },
+        "civilian_extra_loss_s": {
+          "mean": -0.7,
+          "stdev": 4.8
+        }
+      }
+    }
+  }
+}
