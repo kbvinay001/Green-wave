@@ -9,8 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from evaluation.counterfactual import (  # noqa: E402
-    EV_ID, EV_ROUTE, EV_TYPE, civilian_summary, parse_tripinfo,
-    stops_from_trace, summarize, write_eval_routes, write_run_cfg,
+    EV_ID, EV_ROUTE, EV_TYPE, SyntheticSensors, civilian_summary,
+    parse_tripinfo, stops_from_trace, summarize, write_eval_routes,
+    write_run_cfg,
 )
 
 TRIPINFO = """<tripinfos>
@@ -81,6 +82,57 @@ def test_eval_ev_has_no_bluelight(tmp_path):
     assert vtype.find("param") is None        # no devices of any kind
     edges = root.find(f"route[@id='{EV_ROUTE}']").get("edges")
     assert edges and "279067605#8" in edges        # runs the real corridor
+
+
+def test_synthetic_sensors_respect_ranges():
+    s = SyntheticSensors(seed=1, lane_id="approach_west", lane_heading_deg=270.0)
+    # far away: silence, always
+    for _ in range(50):
+        assert s.audio(500.0) == (0.0, None)
+        assert s.vision(500.0, 12.0) == []
+    # vision range is tighter than audio range
+    assert s.vision(120.0, 12.0) == []
+
+
+def test_synthetic_sensors_are_seeded():
+    a = [SyntheticSensors(7, "approach_west", 270.0).audio(100.0) for _ in range(1)]
+    b = [SyntheticSensors(7, "approach_west", 270.0).audio(100.0) for _ in range(1)]
+    assert a == b
+
+
+def test_synthetic_sensors_hit_rates_and_noise():
+    s = SyntheticSensors(seed=3, lane_id="approach_west", lane_heading_deg=270.0)
+    hits, bearings = 0, []
+    for _ in range(2000):
+        conf, bearing = s.audio(100.0)
+        if conf > 0.0:
+            hits += 1
+            assert 0.0 <= conf <= 1.0
+            bearings.append(bearing)
+    assert 0.80 <= hits / 2000 <= 0.90          # nominal 85%
+    # bearing scatters around the lane heading, not uniformly
+    assert all(abs((b - 270.0 + 180) % 360 - 180) < 25 for b in bearings)
+
+    seen = 0
+    for _ in range(2000):
+        dets = s.vision(50.0, 14.0)
+        if dets:
+            seen += 1
+            d = dets[0]
+            assert d["lane_id"] == "approach_west" and d["approaching"]
+            assert d["distance_m"] > 0 and 0.0 <= d["confidence"] <= 1.0
+    assert 0.85 <= seen / 2000 <= 0.95          # nominal 90%
+
+
+def test_summarize_other_mode_key_naming():
+    mk = lambda t: {"ev_travel_s": t, "ev_time_loss_s": 0.0, "ev_stops": 1,
+                    "ev_stopped_s": 0.0, "triggered_at": None,
+                    "civilians": {"arrived": 5, "mean_time_loss_s": 10.0,
+                                  "max_time_loss_s": 20.0, "mean_waiting_s": 0.0}}
+    pairs = [{"seed": 1, "baseline": mk(100.0), "closedloop": mk(80.0)}]
+    s = summarize(pairs, mode="closedloop")
+    assert s["ev_travel_closedloop_s"]["mean"] == 80.0
+    assert s["ev_time_saved_s"]["mean"] == 20.0
 
 
 def test_summarize_math():

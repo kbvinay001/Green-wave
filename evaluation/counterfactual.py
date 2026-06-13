@@ -52,8 +52,10 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from fusion.fuser import TemporalFusionEngine          # noqa: E402
 from fusion.route_predictor import RoutePredictor      # noqa: E402
 from fusion.sumo_controller import SumoController      # noqa: E402
+from integration.pipeline import EndToEndPipeline, resolve_command_etas  # noqa: E402
 
 EV_ID    = "ev_counterfactual"
 EV_TYPE  = "ambulance_eval"
@@ -187,6 +189,61 @@ def civilian_summary(civilians: List[dict]) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Synthetic sensors (closed-loop mode)
+# ---------------------------------------------------------------------------
+
+class SyntheticSensors:
+    """
+    The classic SUMO validation trick: take the EV's ground-truth position
+    and turn it into the kind of imperfect evidence real sensors produce --
+    audio within ~150 m at an 85% per-tick hit rate with noisy bearing,
+    vision within ~80 m at 90% with noisy confidence/distance/speed. These
+    feed the UNCHANGED TemporalFusionEngine, so every phase-3 gate (cross-
+    modal cap, arm hold, hysteresis) shapes when the preemption actually
+    fires. Seeded, so paired runs stay reproducible.
+    """
+
+    def __init__(self, seed: int, lane_id: str, lane_heading_deg: float,
+                 audio_range_m: float = 150.0, vision_range_m: float = 80.0,
+                 p_audio: float = 0.85, p_vision: float = 0.90):
+        import random
+        self.rng          = random.Random(seed * 7919 + 13)
+        self.lane_id      = lane_id
+        self.heading      = lane_heading_deg
+        self.audio_range  = audio_range_m
+        self.vision_range = vision_range_m
+        self.p_audio      = p_audio
+        self.p_vision     = p_vision
+
+    def audio(self, dist_m: float) -> Tuple[float, Optional[float]]:
+        """(confidence, bearing_deg) -- (0.0, None) when nothing heard."""
+        if not (0.0 <= dist_m <= self.audio_range):
+            return 0.0, None
+        if self.rng.random() > self.p_audio:
+            return 0.0, None
+        conf    = min(1.0, max(0.0, self.rng.gauss(0.85, 0.05)))
+        bearing = (self.heading + self.rng.gauss(0.0, 5.0)) % 360.0
+        return conf, bearing
+
+    def vision(self, dist_m: float, speed_mps: float) -> List[dict]:
+        if not (0.0 <= dist_m <= self.vision_range):
+            return []
+        if self.rng.random() > self.p_vision:
+            return []
+        conf  = min(1.0, max(0.0, self.rng.gauss(0.90, 0.04)))
+        dist  = max(1.0, dist_m + self.rng.gauss(0.0, 4.0))
+        speed = max(0.0, speed_mps + self.rng.gauss(0.0, 1.0))
+        return [{
+            "lane_id":     self.lane_id,
+            "confidence":  round(conf, 3),
+            "approaching": True,
+            "distance_m":  round(dist, 1),
+            "speed_kmh":   round(speed * 3.6, 1),
+            "speed_mps":   round(speed, 2),
+        }]
+
+
+# ---------------------------------------------------------------------------
 # Simulation
 # ---------------------------------------------------------------------------
 
@@ -195,33 +252,48 @@ def _load_config() -> dict:
         return yaml.safe_load(f)
 
 
-def simulate(cfg_path: Path, *, depart: float, duration: float,
-             gui: bool = False, greenwave: bool = False,
-             trigger_m: float = 220.0,
+def simulate(cfg_path: Path, *, mode: str, seed: int, depart: float,
+             duration: float, gui: bool = False, trigger_m: float = 220.0,
              config: Optional[dict] = None) -> dict:
     """
     One SUMO run for exactly `duration` sim-seconds (fixed window, so the
     civilian population is comparable across runs). The EV is injected at
-    `depart`. greenwave=True arms the SumoController cascade off the EV's
-    ground-truth approach.
+    `depart`. Modes:
+
+      baseline    signals untouched; the EV queues like everyone else
+      greenwave   cascade armed from ground truth at trigger_m -- the
+                  upper bound: what perfect detection would buy
+      closedloop  SyntheticSensors -> the real TemporalFusionEngine ->
+                  cascade. Detection misses, bearing noise, the cross-
+                  modal gate and the 0.5 s arm hold all delay the fire,
+                  exactly as they would live.
     """
     import traci
 
     config = config or _load_config()
     corridor   = config["intersection"]["corridors"][0]
     lane_id    = corridor["lane_id"]
+    first_tls  = corridor["intersections"][0]["id"]
     first_edge = corridor["intersections"][0]["approach_edge"]
 
-    controller = None
-    if greenwave:
+    if mode == "baseline":
+        binary = "sumo-gui" if gui else "sumo"
+        traci.start([binary, "-c", str(cfg_path), "--quit-on-end", "true",
+                     "--start", "true"])
+        controller = None
+    else:
         controller = SumoController(config, sumo_cfg=str(cfg_path),
                                     mock=False, gui=gui)
         controller.start()
         predictor = RoutePredictor(config=config)
-    else:
-        binary = "sumo-gui" if gui else "sumo"
-        traci.start([binary, "-c", str(cfg_path), "--quit-on-end", "true",
-                     "--start", "true"])
+
+    fusion, sensors = None, None
+    if mode == "closedloop":
+        lanes   = EndToEndPipeline._lanes_from_config(config)
+        fusion  = TemporalFusionEngine(lanes, config)
+        sensors = SyntheticSensors(seed, lane_id,
+                                   float(corridor.get("heading_deg", 270.0)))
+        arm_ext = float(config["fusion"].get("arm_green_extension_sec", 5.0))
 
     first_edge_len = traci.lane.getLength(f"{first_edge}_0")
 
@@ -245,22 +317,39 @@ def simulate(cfg_path: Path, *, depart: float, duration: float,
         if ev_added and EV_ID in traci.vehicle.getIDList():
             speed = traci.vehicle.getSpeed(EV_ID)
             trace.append((round(t, 1), round(speed, 2)))
+            d = traci.vehicle.getDrivingDistance(
+                EV_ID, first_edge, max(first_edge_len - 1.0, 0.0))
 
-            if greenwave and not triggered:
-                d = traci.vehicle.getDrivingDistance(
-                    EV_ID, first_edge, max(first_edge_len - 1.0, 0.0))
-                if 0.0 <= d <= trigger_m:
-                    # Mirror the live pipeline: measured distance, measured
-                    # speed (floored -- a crawling EV still deserves greens
-                    # planned for moving again), corridor ETAs from the map.
-                    eta_speed = max(speed, 8.0)
-                    tls_ids, etas = predictor.resolve(
-                        lane_id, speed_mps=eta_speed, distance_m=d)
-                    controller.trigger_preemption(lane_id, tls_ids, etas)
-                    triggered  = True
-                    trigger_t  = round(t, 1)
-                    print(f"    [>>] cascade armed at t={t:.1f}s  "
-                          f"d={d:.0f}m  ETAs={[round(e, 1) for e in etas]}")
+            if mode == "greenwave" and not triggered and 0.0 <= d <= trigger_m:
+                # Perfect knowledge: measured distance, measured speed
+                # (floored -- a crawling EV still deserves greens planned
+                # for moving again), corridor ETAs from the map.
+                eta_speed = max(speed, 8.0)
+                tls_ids, etas = predictor.resolve(
+                    lane_id, speed_mps=eta_speed, distance_m=d)
+                controller.trigger_preemption(lane_id, tls_ids, etas)
+                triggered  = True
+                trigger_t  = round(t, 1)
+                print(f"    [>>] cascade armed at t={t:.1f}s  "
+                      f"d={d:.0f}m  ETAs={[round(e, 1) for e in etas]}")
+
+            elif mode == "closedloop":
+                dist = d if d >= 0 else float("inf")
+                audio_conf, bearing = sensors.audio(dist)
+                vision_dets = sensors.vision(dist, speed)
+                commands = fusion.update(audio_conf, bearing, vision_dets, t)
+                for armed_lane in fusion.pop_arm_events():
+                    lane_obj = fusion.lanes.get(armed_lane)
+                    if lane_obj and lane_obj.corridor_tls:
+                        controller.extend_green(lane_obj.corridor_tls[0], arm_ext)
+                for cmd in commands:
+                    tls_ids, etas = resolve_command_etas(predictor, cmd)
+                    controller.trigger_preemption(cmd.target_lane, tls_ids, etas)
+                    if not triggered:
+                        triggered, trigger_t = True, round(t, 1)
+                        print(f"    [>>] fusion fired at t={t:.1f}s  d={d:.0f}m"
+                              f"  belief={cmd.belief:.3f}"
+                              f"  ETAs={[round(e, 1) for e in etas]}")
 
     if controller is not None:
         controller.stop()
@@ -269,7 +358,7 @@ def simulate(cfg_path: Path, *, depart: float, duration: float,
 
     stops, stopped_s = stops_from_trace(trace)
     return {
-        "mode":        "greenwave" if greenwave else "baseline",
+        "mode":        mode,
         "triggered_at": trigger_t,
         "ev_trace":    trace,
         "ev_stops":    stops,
@@ -277,25 +366,26 @@ def simulate(cfg_path: Path, *, depart: float, duration: float,
     }
 
 
-def run_pair(seed: int, *, scale: float, depart: float, duration: float,
-             trigger_m: float, gui: bool, config: dict) -> Optional[dict]:
+def run_cell(seed: int, *, scale: float, modes: Tuple[str, ...],
+             depart: float, duration: float, trigger_m: float,
+             gui: bool, config: dict) -> Optional[dict]:
     """
-    Baseline + greenwave for one (seed, traffic scale); returns the merged
+    All requested modes for one (seed, traffic scale); returns the merged
     record, or None when the EV failed to finish the corridor inside the
-    window in either run (gridlock at high scales -- reported, not fatal).
+    window in any run (gridlock at high scales -- reported, not fatal).
     """
     out = {"seed": seed, "scale": scale}
-    for mode in ("baseline", "greenwave"):
+    for mode in modes:
         name = f"seed{seed}_x{scale:g}_{mode}"
         cfg_path, trip_path = write_run_cfg(RUN_DIR, name, seed, scale=scale)
-        print(f"  [{mode:>9s}] seed={seed} scale={scale:g}  ...")
-        result = simulate(cfg_path, depart=depart, duration=duration,
-                          gui=gui, greenwave=(mode == "greenwave"),
-                          trigger_m=trigger_m, config=config)
+        print(f"  [{mode:>10s}] seed={seed} scale={scale:g}  ...")
+        result = simulate(cfg_path, mode=mode, seed=seed, depart=depart,
+                          duration=duration, gui=gui, trigger_m=trigger_m,
+                          config=config)
         ev, civilians = parse_tripinfo(trip_path)
         if ev is None:
             print(f"  [SKIP] {name}: EV did not finish within {duration}s "
-                  f"-- dropping this (seed, scale) pair")
+                  f"-- dropping this (seed, scale) cell")
             return None
         out[mode] = {
             "ev_travel_s":   round(ev["duration"], 1),
@@ -306,18 +396,18 @@ def run_pair(seed: int, *, scale: float, depart: float, duration: float,
             "civilians":     civilian_summary(civilians),
         }
         out[f"_{mode}_trace"] = result["ev_trace"]
-        print(f"             EV {ev['duration']:.1f}s, "
+        print(f"              EV {ev['duration']:.1f}s, "
               f"{result['ev_stops']} stops ({result['ev_stopped_s']}s standing), "
               f"{len(civilians)} civilians arrived")
     return out
 
 
-def summarize(pairs: List[dict]) -> dict:
-    """Mean +/- stdev across seeds for the headline numbers."""
-    def col(mode, *path):
+def summarize(pairs: List[dict], mode: str = "greenwave") -> dict:
+    """Mean +/- stdev across seeds: `mode` vs baseline."""
+    def col(m, *path):
         vals = []
         for p in pairs:
-            v = p[mode]
+            v = p[m]
             for k in path:
                 v = v[k]
             vals.append(v)
@@ -327,21 +417,21 @@ def summarize(pairs: List[dict]) -> dict:
         return {"mean": round(statistics.mean(vals), 1),
                 "stdev": round(statistics.stdev(vals), 1) if len(vals) > 1 else 0.0}
 
-    base_t, gw_t = col("baseline", "ev_travel_s"), col("greenwave", "ev_travel_s")
-    saved = [b - g for b, g in zip(base_t, gw_t)]
+    base_t, sys_t = col("baseline", "ev_travel_s"), col(mode, "ev_travel_s")
+    saved = [b - g for b, g in zip(base_t, sys_t)]
     civ_b = col("baseline", "civilians", "mean_time_loss_s")
-    civ_g = col("greenwave", "civilians", "mean_time_loss_s")
+    civ_g = col(mode, "civilians", "mean_time_loss_s")
     return {
         "seeds":                    [p["seed"] for p in pairs],
         "ev_travel_baseline_s":     ms(base_t),
-        "ev_travel_greenwave_s":    ms(gw_t),
+        f"ev_travel_{mode}_s":      ms(sys_t),
         "ev_time_saved_s":          ms(saved),
         "ev_time_saved_pct":        round(100.0 * statistics.mean(saved)
                                           / statistics.mean(base_t), 1),
         "ev_stops_baseline":        ms(col("baseline", "ev_stops")),
-        "ev_stops_greenwave":       ms(col("greenwave", "ev_stops")),
-        "civilian_mean_loss_baseline_s":  ms(civ_b),
-        "civilian_mean_loss_greenwave_s": ms(civ_g),
+        f"ev_stops_{mode}":         ms(col(mode, "ev_stops")),
+        "civilian_mean_loss_baseline_s":   ms(civ_b),
+        f"civilian_mean_loss_{mode}_s":    ms(civ_g),
         "civilian_extra_loss_s":    ms([g - b for b, g in zip(civ_b, civ_g)]),
     }
 
@@ -375,10 +465,15 @@ def make_plots(pairs: List[dict], img_dir: Path) -> List[Path]:
         return (statistics.mean(vals),
                 statistics.stdev(vals) if len(vals) > 1 else 0.0)
 
+    modes_present = [(m, lbl, c) for m, lbl, c in
+                     (("baseline",   "baseline",                 "#b0413e"),
+                      ("greenwave",  "green wave (perfect)",     "#3e8e41"),
+                      ("closedloop", "closed loop (noisy sensors)", "#d68910"))
+                     if m in pairs[0]]
+
     # The money plot: what preemption is worth as congestion grows
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11.5, 4.2))
-    for mode, label, color in (("baseline", "baseline", "#b0413e"),
-                               ("greenwave", "green wave", "#3e8e41")):
+    for mode, label, color in modes_present:
         means, stds = zip(*[mean_std(s, mode, "ev_travel_s") for s in scales])
         ax1.errorbar(scales, means, yerr=stds, label=label, color=color,
                      marker="o", capsize=4, linewidth=1.6)
@@ -407,16 +502,14 @@ def make_plots(pairs: List[dict], img_dir: Path) -> List[Path]:
     # that explains the table -- baseline crawls the queue, green wave glides
     heavy = [p for p in pairs if p["scale"] == scales[-1]][0]
     fig, ax = plt.subplots(figsize=(11.5, 3.8))
-    for key, label, color in (("_baseline_trace", "baseline", "#b0413e"),
-                              ("_greenwave_trace", "green wave", "#3e8e41")):
-        tr = heavy[key]
+    for mode, label, color in modes_present:
+        tr = heavy[f"_{mode}_trace"]
         t0 = tr[0][0]
         ax.plot([t - t0 for t, _ in tr], [v * 3.6 for _, v in tr],
                 label=label, color=color, linewidth=1.4)
-    if heavy["greenwave"]["triggered_at"] is not None:
-        ax.axvline(heavy["greenwave"]["triggered_at"] - heavy["_greenwave_trace"][0][0],
-                   color="#3e8e41", linestyle=":", linewidth=1.2,
-                   label="cascade armed")
+        if mode != "baseline" and heavy[mode]["triggered_at"] is not None:
+            ax.axvline(heavy[mode]["triggered_at"] - t0, color=color,
+                       linestyle=":", linewidth=1.2)
     ax.set_xlabel("seconds since EV entered the network")
     ax.set_ylabel("EV speed (km/h)")
     ax.set_title(f"Ambulance speed, {heavy['scale']:g}x demand (seed {heavy['seed']})")
@@ -434,12 +527,29 @@ def make_plots(pairs: List[dict], img_dir: Path) -> List[Path]:
 # Entry
 # ---------------------------------------------------------------------------
 
+def _parse_seeds(spec: str) -> List[int]:
+    """'1-20' or '41,42,43' or a mix ('1-3,41')."""
+    seeds: List[int] = []
+    for part in spec.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "-" in part:
+            lo, hi = part.split("-", 1)
+            seeds.extend(range(int(lo), int(hi) + 1))
+        else:
+            seeds.append(int(part))
+    return seeds
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Paired SUMO runs: preemption on/off")
-    ap.add_argument("--seeds",     default="41,42,43",
-                    help="comma-separated SUMO seeds (default 41,42,43)")
+    ap.add_argument("--seeds",     default="1-20",
+                    help="SUMO seeds: '1-20' or '41,42,43' (default 1-20)")
     ap.add_argument("--scales",    default="1.0,2.0,3.0",
                     help="traffic demand multipliers (default 1.0,2.0,3.0)")
+    ap.add_argument("--modes",     default="baseline,greenwave,closedloop",
+                    help="which runs per cell (baseline is required)")
     ap.add_argument("--depart",    type=float, default=60.0,
                     help="EV injection time, sim-seconds (default 60)")
     ap.add_argument("--duration",  type=float, default=700.0,
@@ -450,26 +560,36 @@ def main() -> None:
     args = ap.parse_args()
 
     config = _load_config()
-    seeds  = [int(s) for s in args.seeds.split(",") if s.strip()]
+    seeds  = _parse_seeds(args.seeds)
     scales = [float(s) for s in args.scales.split(",") if s.strip()]
+    modes  = tuple(m.strip() for m in args.modes.split(",") if m.strip())
+    if "baseline" not in modes:
+        raise SystemExit("--modes must include baseline (it is the control)")
+    sys_modes = [m for m in modes if m != "baseline"]
 
+    total = len(seeds) * len(scales) * len(modes)
     print(f"[CF] counterfactual eval  seeds={seeds}  scales={scales}  "
-          f"depart={args.depart}s  window={args.duration}s  "
-          f"trigger={args.trigger_m}m")
-    pairs = []
+          f"modes={list(modes)}  ({total} SUMO runs)  depart={args.depart}s  "
+          f"window={args.duration}s  trigger={args.trigger_m}m")
+    pairs, done = [], 0
     for scale in scales:
         for seed in seeds:
-            pair = run_pair(seed, scale=scale, depart=args.depart,
-                            duration=args.duration, trigger_m=args.trigger_m,
-                            gui=args.gui, config=config)
-            if pair is not None:
-                pairs.append(pair)
+            cell = run_cell(seed, scale=scale, modes=modes,
+                            depart=args.depart, duration=args.duration,
+                            trigger_m=args.trigger_m, gui=args.gui,
+                            config=config)
+            done += len(modes)
+            print(f"  [{done}/{total} runs done]")
+            if cell is not None:
+                pairs.append(cell)
     if not pairs:
         raise SystemExit("[CF] nothing completed -- raise --duration?")
 
-    by_scale = {f"{scale:g}x": summarize([p for p in pairs if p["scale"] == scale])
-                for scale in scales
-                if any(p["scale"] == scale for p in pairs)}
+    by_scale = {
+        f"{scale:g}x": {m: summarize(group, mode=m) for m in sys_modes}
+        for scale in scales
+        if (group := [p for p in pairs if p["scale"] == scale])
+    }
 
     results_dir = ROOT / "evaluation" / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -477,22 +597,25 @@ def main() -> None:
     slim_pairs = [{k: v for k, v in p.items() if not k.startswith("_")}
                   for p in pairs]
     out_json.write_text(json.dumps(
-        {"params": {"seeds": seeds, "scales": scales, "depart_s": args.depart,
-                    "duration_s": args.duration, "trigger_m": args.trigger_m},
+        {"params": {"seeds": seeds, "scales": scales, "modes": list(modes),
+                    "depart_s": args.depart, "duration_s": args.duration,
+                    "trigger_m": args.trigger_m},
          "per_run": slim_pairs,
          "by_scale": by_scale}, indent=2))
 
     plots = make_plots(pairs, ROOT / "docs" / "img")
 
     print("\n[CF] ====== summary ======")
-    for label, s in by_scale.items():
-        print(f"  {label} demand:  EV {s['ev_travel_baseline_s']['mean']}s"
-              f" -> {s['ev_travel_greenwave_s']['mean']}s"
-              f"  (saves {s['ev_time_saved_s']['mean']}s,"
-              f" {s['ev_time_saved_pct']}%)"
-              f"  |  stops {s['ev_stops_baseline']['mean']:g}"
-              f" -> {s['ev_stops_greenwave']['mean']:g}"
-              f"  |  civilians +{s['civilian_extra_loss_s']['mean']}s each")
+    for label, per_mode in by_scale.items():
+        for m, s in per_mode.items():
+            print(f"  {label} {m:>10s}:  EV {s['ev_travel_baseline_s']['mean']}s"
+                  f" -> {s[f'ev_travel_{m}_s']['mean']}s"
+                  f"  (saves {s['ev_time_saved_s']['mean']}"
+                  f"+/-{s['ev_time_saved_s']['stdev']}s,"
+                  f" {s['ev_time_saved_pct']}%)"
+                  f"  |  stops {s['ev_stops_baseline']['mean']:g}"
+                  f" -> {s[f'ev_stops_{m}']['mean']:g}"
+                  f"  |  civilians +{s['civilian_extra_loss_s']['mean']}s each")
     print(f"  wrote {out_json}")
     for p in plots:
         print(f"  wrote {p}")

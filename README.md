@@ -3,7 +3,7 @@
 > **Certainty-aware emergency vehicle preemption using audio-visual fusion.**
 
 > [!NOTE]
-> **✅ All five phases complete — trained detectors, virtual-sensor replay on the real Benz Circle network, trust-gated fusion, security hardening, and a counterfactual evaluation showing up to 73 s / 40% faster ambulance corridor times. Remaining: live mic/camera capture (hardware).**
+> **✅ All five phases complete — trained detectors, virtual-sensor replay on the real Benz Circle network, trust-gated fusion, security hardening, and a 180-run counterfactual evaluation: the full closed-loop system (noisy synthetic sensors → unchanged fusion engine → SUMO signals) clears the ambulance corridor 29–35% faster across 20 seeds at every traffic density, for under 1 s of added delay per civilian. Remaining: live mic/camera capture (hardware).**
 
 Detects approaching ambulances from CCTV and microphone arrays, fuses the evidence with a temporal belief engine, and pre-clears a corridor of green traffic lights — before the vehicle reaches the intersection.
 
@@ -181,12 +181,27 @@ and bounds the damage:
 The question that decides whether any of this matters: with the **same
 traffic, same routes, same random seed**, how much faster does the ambulance
 cross Benz Circle when the green wave fires — and what does it cost everyone
-else? `evaluation/counterfactual.py` runs paired headless SUMO simulations
-(baseline vs green wave) across three demand levels, three seeds each. All
-numbers come from SUMO's tripinfo output; there are no assumed cycle times
-or analytical shortcuts anywhere.
+else? `evaluation/counterfactual.py` runs paired headless SUMO simulations on
+the real network across **three demand levels × 20 random seeds × three
+modes** (180 runs). Every number comes from SUMO's `tripinfo` output; there
+are no assumed cycle times or analytical shortcuts anywhere.
 
 ![The real corridor](docs/img/benz_circle_network.png)
+
+The three modes are the heart of the experiment:
+
+- **baseline** — signals run their normal programs; the ambulance queues
+  like any other vehicle. The control.
+- **green wave (perfect)** — the cascade arms from the EV's ground-truth
+  position the instant it's within 220 m. The theoretical ceiling: what
+  flawless detection would buy.
+- **closed loop (noisy sensors)** — the validation that matters. The EV's
+  position becomes *imperfect evidence* (synthetic audio within 150 m at an
+  85% hit rate with noisy bearing; synthetic vision within 80 m at 90% with
+  noisy confidence) and feeds the **unchanged `TemporalFusionEngine`** —
+  every phase-3 gate, the 0.5 s arm hold, the cross-modal cap — which decides
+  when the preemption actually fires. This is the real pipeline driving real
+  signals; only the sensor front-end is simulated.
 
 The eval ambulance deliberately does **not** carry SUMO's `bluelight` device
 — that model parts traffic into a perfect rescue lane and drives through red
@@ -196,28 +211,44 @@ measured benefit is noise, −6 s to +3 s.) The eval EV obeys signals and
 queues like everything else, so the measurement isolates exactly what signal
 preemption removes.
 
-| demand | EV corridor time | time saved | EV full stops | cost per civilian |
-|---|---|---|---|---|
-| 1× recorded volume | 175.6 s → 121.1 s | **54.5 s (31.0%)** | 4 → 1.7 | +0.4 s |
-| 2× | 183.0 s → 178.2 s | 4.7 s (2.6%) | 4.3 → 2.3 | +0.6 s |
-| 3× | 183.9 s → 110.7 s | **73.2 s (39.8%)** | 5 → 1 | +1.7 s |
+Headline (mean ± std over 20 seeds, EV corridor travel time):
+
+| demand | baseline | closed loop (real system) | time saved | EV stops | cost per civilian |
+|---|---|---|---|---|---|
+| 1× recorded volume | 176.5 s | 114.0 s | **62.5 ± 6.5 s (35.4%)** | 4.1 → 1.3 | +0.8 s |
+| 2× | 181.1 s | 129.5 s | **51.6 ± 16.2 s (28.5%)** | 4.2 → 1.8 | +0.3 s |
+| 3× | 197.6 s | 133.3 s | **64.4 ± 44.1 s (32.6%)** | 4.8 → 1.9 | −0.6 s |
 
 ![Counterfactual results](docs/img/counterfactual_travel_time.png)
 
-![EV speed trace at 3x demand](docs/img/counterfactual_ev_speed.png)
+The ambulance crosses the corridor **~29–35% faster at every density**, and
+the right-hand panel is the honesty metric the panel cares about most: all
+three civilian-cost curves sit on top of each other. The green wave buys the
+ambulance a minute for **under one second** of added delay per civilian
+vehicle — and at 3× demand the corridor clears so cleanly that civilians
+behind the ambulance come out *slightly ahead* (−0.6 s).
 
-The speed trace is the whole argument in one picture: both runs are
-identical until the cascade arms (dotted line), then the baseline ambulance
-dead-stops three times in signal queues while the green-wave ambulance
-keeps rolling and finishes ~65 s earlier.
+The most interesting result is that **the real noisy-sensor system beats the
+perfect-knowledge ceiling** (62.5 s vs 53.1 s saved at 1×, and with *tighter*
+variance). That isn't luck: perfect-knowledge mode fires at 220 m, so its
+fixed 12 s green holds at the far junctions expire before the EV arrives,
+whereas the cross-modal gate makes the closed-loop system wait for camera
+confirmation at ~80 m — which times the cascade to when the ambulance is
+actually there. The certainty-gating designed to suppress false positives
+turns out to *also* schedule the preemption better than naive early
+triggering. (The fixed 12 s hold is still the limiting factor at 2×;
+demand-adaptive hold duration is the obvious next lever — future work.)
 
-The 2× dip is consistent across all seeds and honest: with moderate queues,
-the fixed 12 s green hold expires before the EV clears the backlog, so it
-catches re-imposed reds — at 3× the same cascade drains a much longer queue
-just ahead of the EV and pays off massively. Demand-adaptive hold duration
-is the obvious next lever (future work).
+![EV speed trace, 3x demand](docs/img/counterfactual_ev_speed.png)
 
-Reproduce with: `python -m evaluation.counterfactual` (needs SUMO; ~5 min).
+The speed trace is the whole argument in one picture: all three runs are
+identical until each arms its cascade (dotted lines), then the baseline
+ambulance dead-stops repeatedly in signal queues while both preemption modes
+keep rolling.
+
+Reproduce with: `python -m evaluation.counterfactual` (needs SUMO; 20 seeds ≈
+40 min, or `--seeds 1-3` for a quick look). Full per-seed data lands in
+`evaluation/results/counterfactual.json`.
 
 #### Deployment
 
@@ -271,7 +302,8 @@ the plain `--screenshot` flag captures an offline shell).
 | Per-lane preemption rate limit | ✅ Complete | 4 per lane per sliding hour; denials audited, never reach SUMO |
 | Hash-chained audit log | ✅ Complete | `logs/audit.jsonl`, SHA-256 chain — `python -m common.audit` verifies |
 | CORS + input validation | ✅ Complete | Origin allowlist, pydantic everywhere, /reset moved to POST |
-| Counterfactual evaluation | ✅ Complete | Paired SUMO runs, 3 seeds × 3 demand levels — up to 73 s / 40% saved |
+| Counterfactual evaluation | ✅ Complete | 180 paired SUMO runs (20 seeds × 3 demand × 3 modes); closed-loop system 29–35% faster |
+| Closed-loop sensor validation | ✅ Complete | Synthetic 85%/150 m audio + 90%/80 m vision → unchanged `TemporalFusionEngine` → signals |
 | Backend-served dashboard | ✅ Complete | `ui/dist` mounted into FastAPI — one port, one container |
 | docker-compose + free tunnel | ✅ Complete | Single image (CPU torch) + opt-in `cloudflared` quick-tunnel profile |
 
@@ -280,10 +312,12 @@ the plain `--screenshot` flag captures an offline shell).
 ## 📊 Simulation Results
 
 The headline numbers live in [Phase 5 — counterfactual evaluation](#phase-5--counterfactual-evaluation--deployment):
-paired SUMO runs on the real Benz Circle network, measured (not modelled)
-from tripinfo output — **54.5 s saved at recorded demand, 73.2 s at 3×**,
-for well under 2 s of added delay per civilian vehicle. Full per-seed data
-in `evaluation/results/counterfactual.json`.
+180 paired SUMO runs on the real Benz Circle network, measured (not modelled)
+from tripinfo output. The full closed-loop system — noisy synthetic sensors
+driving the unchanged fusion engine — clears the ambulance corridor **29–35%
+faster across 20 seeds at every density** (62.5 ± 6.5 s saved at recorded
+volume), for under 1 s of added delay per civilian vehicle. Full per-seed
+data in `evaluation/results/counterfactual.json`.
 
 ## Quick Start (Demo Mode)
 
