@@ -3,7 +3,7 @@
 > **Certainty-aware emergency vehicle preemption using audio-visual fusion.**
 
 > [!NOTE]
-> **✅ All five phases complete + a validated evaluation.** Trained detectors, virtual-sensor replay on the real Benz Circle network, trust-gated fusion, security hardening, and a 180-run counterfactual: the full closed-loop system (noisy synthetic sensors → unchanged fusion engine → SUMO signals) clears the ambulance corridor **29–35 % faster across 20 seeds at every density** (paired *t*-test *p* < 10⁻⁵), for no statistically significant cost to other traffic. A separate adversarial suite confirms **zero false preemptions** across all benign attack scenarios. Remaining: live mic/camera capture (hardware).
+> **✅ All five phases complete + a validated evaluation.** Trained detectors, virtual-sensor replay on the real Benz Circle network, trust-gated fusion, security hardening, and a 180-run counterfactual: the full closed-loop system (noisy synthetic sensors → unchanged fusion engine → SUMO signals) clears the ambulance corridor **29–35 % faster across 20 seeds at every density** (paired *t*-test *p* < 10⁻⁵), for no statistically significant cost to other traffic. An adversarial suite confirms **zero false preemptions** across all benign attack scenarios (a naive immediate-preemption baseline false-fires 731×); the siren detector holds **AUC 0.925 in street noise**; and the whole pipeline runs **5–16× faster than real time** on a laptop GPU. Remaining: live mic/camera capture (hardware).
 
 Detects approaching ambulances from CCTV and microphone arrays, fuses the evidence with a temporal belief engine, and pre-clears a corridor of green traffic lights — before the vehicle reaches the intersection.
 
@@ -48,6 +48,23 @@ flowchart LR
 - **Certainty gating** — belief must exceed threshold *and hold* for `arm_duration_sec` before preemption fires
 - **SUMO-optional architecture** — mock TLS state machine runs on any machine without SUMO installed
 - **Demo mode** — full system runs with synthetic audio and vision, no hardware or trained models required
+
+---
+
+## Validation at a glance
+
+Every headline below is **measured, reproducible, and backed by tests** — not
+asserted. Full method and figures in the per-phase sections that follow.
+
+| Question a reviewer asks | Answer | Reproduce |
+|---|---|---|
+| Does it actually help a real ambulance? | **29–35 % faster** corridor crossing, 20 seeds × 3 densities — paired *t*-test *p* < 10⁻⁵, Cohen's *dz* 1.5–9.6 | `evaluation/counterfactual.py` → `significance.py` |
+| What does it cost everyone else? | **No statistically significant delay** at 2× / 3× demand (< 1 s at recorded volume) | `evaluation/significance.py` |
+| Is the 1.000 audio score real or an easy test? | AUC **1.000 clean → 0.925** in street noise (−5…+5 dB), degrades gracefully | `audio/hard_eval.py` |
+| Does it stay quiet when no ambulance is there? | **0 false preemptions** across 4 benign spoof scenarios × 30 seeds | `evaluation/adversarial.py` *(hard CI gate)* |
+| Better than a naive trigger-on-detection system? | naive false-fires **731×** (641 from car horns); ours **0×** | `evaluation/adversarial.py --compare` |
+| Does it run in real time? | audio **16×**, vision **5.6×**, fusion **~30000×** real-time on a laptop GPU | `evaluation/latency.py` |
+| Was "noisy beats perfect" a real finding? | No — a trigger-timing artifact; honestly reframed as *timing dominates detection accuracy* | controlled @80 m re-run |
 
 ---
 
