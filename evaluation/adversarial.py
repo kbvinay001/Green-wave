@@ -309,6 +309,55 @@ class RealFusionAdapter(FusionAdapter):
         return self._denied
 
 
+class NaiveFusionAdapter(FusionAdapter):
+    """
+    Prior-art strawman: immediate preemption the instant any single detection
+    crosses a fire threshold -- no cross-modal gate, no Doppler, no bearing
+    kernel, no arm-hold, no rate limit. This is the classic "trigger the green
+    on siren detected" acoustic/optical EVP (Opticom-style). It exists here to
+    quantify exactly what the trust gates buy: run it through the same
+    scenarios and watch it fire on things the gated engine ignores.
+    """
+
+    FIRE_THR = 0.5     # a typical raw detection threshold
+
+    def __init__(self, cfg: dict, lanes: list[str]):
+        self.lanes = lanes
+        self._buf_audio: Optional[AudioDet] = None
+        self._buf_vision: list[VisionDet] = []
+        self._firing = False         # latch so we count episodes, not ticks
+        self._belief = 0.0
+
+    def feed_audio(self, det: AudioDet, t: float) -> None:
+        self._buf_audio = det
+
+    def feed_vision(self, det: VisionDet, t: float) -> None:
+        self._buf_vision.append(det)
+
+    def tick(self, t: float) -> Optional[str]:
+        a_conf = self._buf_audio.confidence if self._buf_audio else 0.0
+        v_conf = max((d.confidence for d in self._buf_vision), default=0.0)
+        lane = (self._buf_audio.lane if self._buf_audio
+                else self._buf_vision[0].lane if self._buf_vision else None)
+        self._belief = max(a_conf, v_conf)
+        self._buf_audio, self._buf_vision = None, []
+
+        fired = None
+        if self._belief >= self.FIRE_THR:
+            if not self._firing:      # rising edge = a new preemption episode
+                fired = lane
+            self._firing = True
+        else:
+            self._firing = False
+        return fired
+
+    def belief(self, lane: str) -> float:
+        return self._belief
+
+    def denied_count(self) -> int:
+        return 0
+
+
 # ==========================================================================
 # SCENARIOS  (corridor lane under test = "N")
 # ==========================================================================
@@ -419,9 +468,16 @@ class ScenarioResult:
         return max(self.max_belief_per_seed) if self.max_belief_per_seed else 0.0
 
 
-def run_scenario(name, gen_fn, guard, expected, cfg, seeds, use_real) -> ScenarioResult:
+def _adapter_cls(kind: str):
+    return {"real": RealFusionAdapter,
+            "reference": ReferenceFusionAdapter,
+            "naive": NaiveFusionAdapter}[kind]
+
+
+def run_scenario(name, gen_fn, guard, expected, cfg, seeds, use_real,
+                 adapter: str | None = None) -> ScenarioResult:
     res = ScenarioResult(name=name, expected=expected, guard=guard, seeds=seeds)
-    AdapterCls = RealFusionAdapter if use_real else ReferenceFusionAdapter
+    AdapterCls = _adapter_cls(adapter or ("real" if use_real else "reference"))
     for s in range(seeds):
         rng = random.Random(1000 + s)
         eng = AdapterCls(cfg, LANES)
@@ -442,9 +498,36 @@ def run_scenario(name, gen_fn, guard, expected, cfg, seeds, use_real) -> Scenari
     return res
 
 
-def run_all(cfg: dict, seeds: int, use_real: bool) -> list[ScenarioResult]:
-    return [run_scenario(name, gen_fn, guard, expected, cfg, seeds, use_real)
+def run_all(cfg: dict, seeds: int, use_real: bool,
+            adapter: str | None = None) -> list[ScenarioResult]:
+    return [run_scenario(name, gen_fn, guard, expected, cfg, seeds, use_real, adapter)
             for name, (gen_fn, guard, expected) in SCENARIOS.items()]
+
+
+def run_comparison(cfg: dict, seeds: int) -> dict:
+    """
+    Ours (gated, real engine) vs a naive immediate-preemption baseline, on the
+    same scenarios. The prior-art comparison: it quantifies what the trust
+    gates buy by counting false preemptions a naive system would suffer.
+    """
+    gated = {r.name: r for r in run_all(cfg, seeds, use_real=True, adapter="real")}
+    naive = {r.name: r for r in run_all(cfg, seeds, use_real=False, adapter="naive")}
+    rows = []
+    for name, (_, guard, expected) in SCENARIOS.items():
+        rows.append({
+            "scenario": name, "guard": guard, "expected": expected,
+            "naive_fires": naive[name].total_fires,
+            "gated_fires": gated[name].total_fires,
+        })
+    benign = [r for r in rows if r["expected"] == 0]
+    return {
+        "seeds": seeds,
+        "rows": rows,
+        "naive_benign_false_fires": sum(r["naive_fires"] for r in benign),
+        "gated_benign_false_fires": sum(r["gated_fires"] for r in benign),
+        "benign_scenarios": len(benign),
+        "naive_scenarios_leaking": sum(1 for r in benign if r["naive_fires"] > 0),
+    }
 
 
 def evaluate(results: list[ScenarioResult], cfg: dict) -> tuple[bool, list[str]]:
@@ -487,10 +570,31 @@ def main():
     ap.add_argument("--seeds", type=int, default=30, help="seeds per scenario (default 30)")
     ap.add_argument("--reference", action="store_true",
                     help="use the self-contained reference gate model instead of the real engine")
+    ap.add_argument("--compare", action="store_true",
+                    help="ours (gated) vs a naive immediate-preemption baseline -- prior-art comparison")
     ap.add_argument("--out", default="evaluation/results/adversarial.json")
     args = ap.parse_args()
 
     cfg = load_config()
+
+    if args.compare:
+        comp = run_comparison(cfg, args.seeds)
+        print(f"\n[compare] gated (ours) vs naive immediate preemption  ({args.seeds} seeds/scenario)")
+        print("=" * 70)
+        print(f"{'scenario':<16}{'guard':<18}{'naive fires':<14}{'ours (gated)'}")
+        print("-" * 70)
+        for r in comp["rows"]:
+            tag = "" if r["expected"] == 0 else "  (spoof: both fire)"
+            print(f"{r['scenario']:<16}{r['guard']:<18}{r['naive_fires']:<14}{r['gated_fires']}{tag}")
+        print("=" * 70)
+        print(f"benign scenarios: naive false-fires in "
+              f"{comp['naive_scenarios_leaking']}/{comp['benign_scenarios']} "
+              f"({comp['naive_benign_false_fires']} total) | ours: "
+              f"{comp['gated_benign_false_fires']}")
+        out = ROOT / "evaluation" / "results" / "adversarial_compare.json"
+        out.write_text(json.dumps(comp, indent=2))
+        print(f"[out] wrote {out}")
+        return
     use_real = not args.reference
     engine_name = "REAL TemporalFusionEngine" if use_real else "REFERENCE model (re-implementation)"
     print(f"[engine] {engine_name}")

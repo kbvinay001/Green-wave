@@ -329,6 +329,32 @@ This runs as a **hard CI gate** (`tests/test_adversarial.py`) — the build
 fails if any benign scenario ever false-fires. Reproduce with
 `python -m evaluation.adversarial` (no SUMO needed; seconds).
 
+**Versus prior art.** "Baseline vs ours" isn't a real comparison — the
+relevant question is *ours vs the naive method a simple system would use*. So
+the same scenarios run against a **naive immediate-preemption baseline**:
+fire the green the instant any single detection crosses threshold, with no
+cross-modal gate, no Doppler, no bearing, no arm-hold, no rate limit — the
+classic "trigger on siren detected" acoustic/optical EVP (Opticom-style).
+30 seeds per scenario:
+
+| scenario | naive baseline | ours (gated) |
+|---|---|---|
+| phone_speaker (audio-only spoof) | 30 false fires | **0** |
+| receding_ev (departing siren) | 30 | **0** |
+| cross_street (90°-off siren) | 30 | **0** |
+| noise_burst (intermittent horns) | **641** | **0** |
+| spoof_flood (perfect dual-modal) | 30 | 30 *(both — undefendable)* |
+
+The naive baseline false-fires in **all four** benign scenarios — 731 false
+preemptions across 150 short runs, including 641 from car horns alone. Our
+gated engine: **zero**, firing only on the perfect dual-modal spoof that no
+system can distinguish from a real ambulance. That gap *is* the contribution
+of Phases 3–4: the trust gates are the difference between a deployable system
+and one any phone speaker can hijack. (On benefit when a real EV *is*
+present, the two are comparable — both fire — so the gates cost nothing in
+the true-positive case; see the trigger-timing analysis above.) Reproduce
+with `python -m evaluation.adversarial --compare`.
+
 #### Real-time latency
 
 "Does it run in real time, and how fast does the light change?" Two separate
@@ -412,6 +438,8 @@ the plain `--screenshot` flag captures an offline shell).
 | Closed-loop sensor validation | ✅ Complete | Synthetic 85%/150 m audio + 90%/80 m vision → unchanged `TemporalFusionEngine` → signals |
 | Statistical significance | ✅ Complete | Paired *t*-tests, 95% CIs, Cohen's *dz*, bootstrap — `evaluation/significance.py` |
 | Adversarial / false-preemption | ✅ Complete | 5 attack scenarios × 30 seeds, 0 benign fires; hard CI gate in `tests/test_adversarial.py` |
+| Prior-art comparison | ✅ Complete | vs naive immediate-preemption: naive false-fires 731×, ours 0× — `--compare` |
+| Real-time latency | ✅ Complete | audio 16× / vision 5.6× / fusion ~30000× real-time on RTX 4060 — `evaluation/latency.py` |
 | Backend-served dashboard | ✅ Complete | `ui/dist` mounted into FastAPI — one port, one container |
 | docker-compose + free tunnel | ✅ Complete | Single image (CPU torch) + opt-in `cloudflared` quick-tunnel profile |
 

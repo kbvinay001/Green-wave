@@ -15,8 +15,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from evaluation.adversarial import (  # noqa: E402
-    AudioDet, RealFusionAdapter, ReferenceFusionAdapter, ScenarioResult,
-    SCENARIOS, VisionDet, evaluate, load_config, run_all, run_scenario,
+    AudioDet, NaiveFusionAdapter, RealFusionAdapter, ReferenceFusionAdapter,
+    ScenarioResult, SCENARIOS, VisionDet, evaluate, load_config, run_all,
+    run_comparison, run_scenario,
 )
 
 CFG = load_config()
@@ -122,3 +123,48 @@ def test_reference_model_also_passes():
     ref = run_all(CFG, seeds=6, use_real=False)
     ok, _ = evaluate(ref, CFG)
     assert ok
+
+
+# ----------------------------------------------------------------------
+# Prior-art comparison: a naive immediate-preemption baseline
+# ----------------------------------------------------------------------
+
+def test_naive_adapter_fires_on_audio_alone():
+    """The strawman fires on a loud siren with no camera -- exactly what the
+    cross-modal gate is supposed to stop."""
+    naive = NaiveFusionAdapter(CFG, ["N", "E", "S", "W"])
+    fired = []
+    for k in range(10):
+        t = k * 0.1
+        naive.feed_audio(AudioDet("N", 0.0, 0.9, receding=False), t)
+        if naive.tick(t):
+            fired.append(t)
+    assert fired                                  # it false-fires
+    # ...and the REAL engine does not, on the identical input
+    real = RealFusionAdapter(CFG, ["N", "E", "S", "W"])
+    real_fired = []
+    for k in range(10):
+        t = k * 0.1
+        real.feed_audio(AudioDet("N", 0.0, 0.9, receding=False), t)
+        if real.tick(t):
+            real_fired.append(t)
+    assert not real_fired
+
+
+def test_naive_fires_once_per_episode_not_per_tick():
+    """Rising-edge latch: continuous detection = one episode, not 100 fires."""
+    naive = NaiveFusionAdapter(CFG, ["N", "E", "S", "W"])
+    fires = 0
+    for k in range(50):
+        naive.feed_audio(AudioDet("N", 0.0, 0.95, receding=False), k * 0.1)
+        if naive.tick(k * 0.1):
+            fires += 1
+    assert fires == 1
+
+
+def test_comparison_shows_gates_eliminate_false_fires():
+    comp = run_comparison(CFG, seeds=8)
+    # naive leaks in every benign scenario; ours in none
+    assert comp["naive_scenarios_leaking"] == comp["benign_scenarios"]
+    assert comp["naive_benign_false_fires"] > 0
+    assert comp["gated_benign_false_fires"] == 0

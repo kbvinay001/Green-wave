@@ -63,9 +63,9 @@ Effort is **focused work-hours** for me, not student-calendar days.
 | **T4** | **Sensitivity sweep** — audio hit-rate 40→95%, plot time-saved vs detection rate; headline "still saves >X s at 60% detection" | Fix #4 — robustness | ~3 h | closed-loop mode (done) |
 | ✅ **T5** | **DONE — hard audio test set** — sirens mixed into UrbanSound8K at −5..+5 dB SNR, `audio/hard_eval.py` reproduces the clean 1.000 then reports **0.925 overall** (0.86 @ -5 dB, 0.98 @ +5 dB); 1.000 reframed as clean ceiling in the README | Fix #1 — worst credibility liability | done | — |
 | **T6** | **Second corridor** — same eval on one more OSM network (different topology) | Fix #5 — generalization | ~half day | `build_corridor.py` exists |
-| **T7** | **End-to-end wall-clock latency** — siren onset → signal change in the *real* pipeline (not sim-time) | Deployability number | ~half day | demo pipeline (done) |
+| ✅ **T7** | **DONE** — `evaluation/latency.py` on the real models (RTX 4060): audio 6.2 ms (16×), vision 7.2 ms (5.6×), fusion 0.003 ms (~30000×) vs real-time budgets. Action delay (~5–6 s) reported separately as deliberate certainty gating, not slowness | Deployability number | done | — |
 | **T8** | **Route-uncertainty test** — ambulance turns *off* the predicted corridor; show graceful degradation | Completeness | ~half day | eval harness |
-| **T9** | **Prior-art comparison** — ours vs naive-immediate preemption (fire the instant any detection crosses threshold, no gates) | Paper requirement | ~half day | adversarial + counterfactual |
+| ✅ **T9** | **DONE** — `evaluation/adversarial.py --compare`: ours vs naive immediate-preemption. Naive false-fires in 4/4 benign scenarios (731×, incl. 641 from horns); ours 0×. Quantifies what Phases 3–4 buy | Paper requirement | done | — |
 
 **Tiering:**
 - **Must-do before any defense:** T1, T2, T3 (≈ half a focused day total, kills the three sharpest questions).

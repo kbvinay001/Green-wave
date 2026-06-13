@@ -1,0 +1,44 @@
+{
+  "seeds": 30,
+  "rows": [
+    {
+      "scenario": "phone_speaker",
+      "guard": "cross_modal_cap",
+      "expected": 0,
+      "naive_fires": 30,
+      "gated_fires": 0
+    },
+    {
+      "scenario": "receding_ev",
+      "guard": "doppler+decay",
+      "expected": 0,
+      "naive_fires": 30,
+      "gated_fires": 0
+    },
+    {
+      "scenario": "cross_street",
+      "guard": "bearing_kernel",
+      "expected": 0,
+      "naive_fires": 30,
+      "gated_fires": 0
+    },
+    {
+      "scenario": "noise_burst",
+      "guard": "arm_hold+decay",
+      "expected": 0,
+      "naive_fires": 641,
+      "gated_fires": 0
+    },
+    {
+      "scenario": "spoof_flood",
+      "guard": "rate_limit",
+      "expected": -1,
+      "naive_fires": 30,
+      "gated_fires": 30
+    }
+  ],
+  "naive_benign_false_fires": 731,
+  "gated_benign_false_fires": 0,
+  "benign_scenarios": 4,
+  "naive_scenarios_leaking": 4
+}
