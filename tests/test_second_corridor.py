@@ -18,7 +18,7 @@ def test_network_artifacts_exist():
     assert (NET / "shollinganallur.net.xml").exists()
     assert (NET / "background.rou.xml").exists()
     assert (NET / "ev.rou.xml").exists()
-    corr = json.loads((NET / "_config_corridor.json").read_text())
+    corr = json.loads((NET / "corridor.json").read_text())
     assert corr["lane_id"] and len(corr["intersections"]) >= 4
     assert all({"id", "distance_m", "approach_edge"} <= set(i) for i in corr["intersections"])
 

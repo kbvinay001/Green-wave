@@ -48,7 +48,7 @@ RUN_DIR = ROOT / "outputs" / "second_corridor"
 def shol_config() -> dict:
     """Base config, with the intersection corridor swapped to Shollinganallur."""
     cfg = copy.deepcopy(_load_config())
-    corr = json.loads((NET_DIR / "_config_corridor.json").read_text())
+    corr = json.loads((NET_DIR / "corridor.json").read_text())
     cfg["intersection"] = {"corridors": [corr]}
     return cfg
 
@@ -57,8 +57,7 @@ def write_cfg(name: str, seed: int) -> tuple[Path, Path]:
     """A Shollinganallur .sumocfg + bluelight-free eval EV, mirroring the Benz
     eval setup but on this network."""
     RUN_DIR.mkdir(parents=True, exist_ok=True)
-    edges = json.loads((NET_DIR / "_config_corridor.json").read_text())
-    ev_edges = (ROOT / "sim" / "nets" / "shollinganallur" / "ev.rou.xml").read_text()
+    ev_edges = (NET_DIR / "ev.rou.xml").read_text()
     # pull the corridor edge string out of the committed ev.rou.xml
     import re
     m = re.search(r'route id="ev_shol_corridor" edges="([^"]+)"', ev_edges)
