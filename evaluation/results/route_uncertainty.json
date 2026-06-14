@@ -1,0 +1,300 @@
+{
+  "summary": {
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "deviation_took_effect_in": "8/8",
+    "mean_extra_civilian_loss_s": 0.16,
+    "max_extra_civilian_loss_s": 1.4,
+    "all_preemptions_released": true
+  },
+  "rows": [
+    {
+      "seed": 1,
+      "ctl": {
+        "seed": 1,
+        "deviated": false,
+        "ev_finished": true,
+        "ev_travel_s": 111.8,
+        "triggered_at": 102.9,
+        "deviated_at": null,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 196,
+          "mean_time_loss_s": 37.5,
+          "max_time_loss_s": 160.9,
+          "mean_waiting_s": 10.4
+        }
+      },
+      "dev": {
+        "seed": 1,
+        "deviated": true,
+        "ev_finished": true,
+        "ev_travel_s": 58.1,
+        "triggered_at": 102.9,
+        "deviated_at": 108.0,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 223,
+          "mean_time_loss_s": 38.9,
+          "max_time_loss_s": 161.1,
+          "mean_waiting_s": 10.6
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "ctl": {
+        "seed": 2,
+        "deviated": false,
+        "ev_finished": true,
+        "ev_travel_s": 112.2,
+        "triggered_at": 103.5,
+        "deviated_at": null,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 196,
+          "mean_time_loss_s": 37.0,
+          "max_time_loss_s": 151.8,
+          "mean_waiting_s": 10.5
+        }
+      },
+      "dev": {
+        "seed": 2,
+        "deviated": true,
+        "ev_finished": true,
+        "ev_travel_s": 60.4,
+        "triggered_at": 103.5,
+        "deviated_at": 108.6,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 224,
+          "mean_time_loss_s": 38.3,
+          "max_time_loss_s": 151.7,
+          "mean_waiting_s": 10.7
+        }
+      }
+    },
+    {
+      "seed": 3,
+      "ctl": {
+        "seed": 3,
+        "deviated": false,
+        "ev_finished": true,
+        "ev_travel_s": 108.1,
+        "triggered_at": 102.7,
+        "deviated_at": null,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 223,
+          "mean_time_loss_s": 40.4,
+          "max_time_loss_s": 165.9,
+          "mean_waiting_s": 12.1
+        }
+      },
+      "dev": {
+        "seed": 3,
+        "deviated": true,
+        "ev_finished": true,
+        "ev_travel_s": 58.8,
+        "triggered_at": 102.7,
+        "deviated_at": 107.8,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 222,
+          "mean_time_loss_s": 39.6,
+          "max_time_loss_s": 165.8,
+          "mean_waiting_s": 11.4
+        }
+      }
+    },
+    {
+      "seed": 4,
+      "ctl": {
+        "seed": 4,
+        "deviated": false,
+        "ev_finished": true,
+        "ev_travel_s": 110.3,
+        "triggered_at": 103.2,
+        "deviated_at": null,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 187,
+          "mean_time_loss_s": 38.2,
+          "max_time_loss_s": 155.2,
+          "mean_waiting_s": 11.4
+        }
+      },
+      "dev": {
+        "seed": 4,
+        "deviated": true,
+        "ev_finished": true,
+        "ev_travel_s": 59.9,
+        "triggered_at": 103.2,
+        "deviated_at": 108.3,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 187,
+          "mean_time_loss_s": 38.7,
+          "max_time_loss_s": 155.2,
+          "mean_waiting_s": 11.9
+        }
+      }
+    },
+    {
+      "seed": 5,
+      "ctl": {
+        "seed": 5,
+        "deviated": false,
+        "ev_finished": true,
+        "ev_travel_s": 107.7,
+        "triggered_at": 102.9,
+        "deviated_at": null,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 221,
+          "mean_time_loss_s": 40.7,
+          "max_time_loss_s": 167.0,
+          "mean_waiting_s": 12.6
+        }
+      },
+      "dev": {
+        "seed": 5,
+        "deviated": true,
+        "ev_finished": true,
+        "ev_travel_s": 58.8,
+        "triggered_at": 102.9,
+        "deviated_at": 108.0,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 221,
+          "mean_time_loss_s": 39.8,
+          "max_time_loss_s": 162.7,
+          "mean_waiting_s": 12.0
+        }
+      }
+    },
+    {
+      "seed": 6,
+      "ctl": {
+        "seed": 6,
+        "deviated": false,
+        "ev_finished": true,
+        "ev_travel_s": 109.0,
+        "triggered_at": 102.4,
+        "deviated_at": null,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 222,
+          "mean_time_loss_s": 38.5,
+          "max_time_loss_s": 159.3,
+          "mean_waiting_s": 10.7
+        }
+      },
+      "dev": {
+        "seed": 6,
+        "deviated": true,
+        "ev_finished": true,
+        "ev_travel_s": 57.1,
+        "triggered_at": 102.4,
+        "deviated_at": 107.5,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 223,
+          "mean_time_loss_s": 38.4,
+          "max_time_loss_s": 159.3,
+          "mean_waiting_s": 10.7
+        }
+      }
+    },
+    {
+      "seed": 7,
+      "ctl": {
+        "seed": 7,
+        "deviated": false,
+        "ev_finished": true,
+        "ev_travel_s": 104.9,
+        "triggered_at": 102.1,
+        "deviated_at": null,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 217,
+          "mean_time_loss_s": 39.1,
+          "max_time_loss_s": 171.5,
+          "mean_waiting_s": 11.5
+        }
+      },
+      "dev": {
+        "seed": 7,
+        "deviated": true,
+        "ev_finished": true,
+        "ev_travel_s": 56.5,
+        "triggered_at": 102.1,
+        "deviated_at": 107.2,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 217,
+          "mean_time_loss_s": 38.9,
+          "max_time_loss_s": 170.1,
+          "mean_waiting_s": 11.3
+        }
+      }
+    },
+    {
+      "seed": 8,
+      "ctl": {
+        "seed": 8,
+        "deviated": false,
+        "ev_finished": true,
+        "ev_travel_s": 128.5,
+        "triggered_at": 102.5,
+        "deviated_at": null,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 223,
+          "mean_time_loss_s": 39.5,
+          "max_time_loss_s": 157.8,
+          "mean_waiting_s": 11.4
+        }
+      },
+      "dev": {
+        "seed": 8,
+        "deviated": true,
+        "ev_finished": true,
+        "ev_travel_s": 58.3,
+        "triggered_at": 102.5,
+        "deviated_at": 107.6,
+        "preempted_tls": 4,
+        "released_by_end": true,
+        "civilians": {
+          "arrived": 223,
+          "mean_time_loss_s": 39.6,
+          "max_time_loss_s": 157.9,
+          "mean_waiting_s": 11.6
+        }
+      }
+    }
+  ]
+}

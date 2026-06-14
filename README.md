@@ -337,6 +337,29 @@ fusion over single-frame triggering: it absorbs an unreliable detector. (The
 true cliff is below ~5 % per-tick, far under any real detector.) Reproduce
 with `python -m evaluation.sensitivity`.
 
+#### Route uncertainty — what if the ambulance turns off?
+
+The route predictor assumes the EV follows the mapped corridor. When it
+doesn't, the green wave has already been launched for the *whole* corridor,
+so the abandoned downstream junctions are held green for a vehicle that never
+arrives. `evaluation/route_uncertainty.py` runs the real closed-loop pipeline
+twice per seed (8 seeds): a **control** where the EV completes the corridor,
+and a **deviation** where it's rerouted off-corridor right after the first
+signal.
+
+| | result |
+|---|---|
+| deviation actually took effect | **8/8 seeds** |
+| every preemption restored by end | **8/8** — no stuck greens |
+| cost of a wrong route (civilian delay) | **+0.16 s** mean, +1.4 s worst case |
+
+The safety invariant holds: because each preemption holds for a fixed 12 s
+then restores, a wrong route prediction **self-heals** — the abandoned
+junctions release on schedule and the network is never stranded on green. The
+cost to other traffic of guessing the route wrong is statistically nil
+(+0.16 s). The system degrades gracefully when its core assumption is
+violated. Reproduce with `python -m evaluation.route_uncertainty`.
+
 #### Adversarial validation — does it stay quiet?
 
 The counterfactual proves the system *helps* when an ambulance is present. It
