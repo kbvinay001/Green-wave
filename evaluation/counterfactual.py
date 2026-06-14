@@ -254,7 +254,8 @@ def _load_config() -> dict:
 
 def simulate(cfg_path: Path, *, mode: str, seed: int, depart: float,
              duration: float, gui: bool = False, trigger_m: float = 220.0,
-             config: Optional[dict] = None) -> dict:
+             config: Optional[dict] = None,
+             p_audio: float = 0.85, p_vision: float = 0.90) -> dict:
     """
     One SUMO run for exactly `duration` sim-seconds (fixed window, so the
     civilian population is comparable across runs). The EV is injected at
@@ -292,7 +293,8 @@ def simulate(cfg_path: Path, *, mode: str, seed: int, depart: float,
         lanes   = EndToEndPipeline._lanes_from_config(config)
         fusion  = TemporalFusionEngine(lanes, config)
         sensors = SyntheticSensors(seed, lane_id,
-                                   float(corridor.get("heading_deg", 270.0)))
+                                   float(corridor.get("heading_deg", 270.0)),
+                                   p_audio=p_audio, p_vision=p_vision)
         arm_ext = float(config["fusion"].get("arm_green_extension_sec", 5.0))
 
     first_edge_len = traci.lane.getLength(f"{first_edge}_0")

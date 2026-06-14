@@ -315,6 +315,28 @@ Reproduce with: `python -m evaluation.counterfactual` (needs SUMO; 20 seeds ≈
 40 min, or `--seeds 1-3` for a quick look). Full per-seed data lands in
 `evaluation/results/counterfactual.json`.
 
+#### Sensitivity to detector quality
+
+The closed-loop result assumes specific sensor numbers (audio 85 %, vision
+90 % per-tick hit rate). How much do they matter? `evaluation/sensitivity.py`
+sweeps the per-tick hit rate of **both** modalities together from 95 % down
+to 20 % (15 seeds each, same paired design) and measures the time still
+saved:
+
+![Time saved vs detector hit-rate](docs/img/sensitivity.png)
+
+The answer is the interesting part: **time saved is essentially flat — 62–64 s
+across the entire 20 %–95 % range, firing in 100 % of runs.** The system is
+*not* sensitive to per-tick detection accuracy, and there's a clean reason:
+the ambulance sits inside sensor range for ~50–100 fusion ticks on approach,
+so even a 20 %-per-tick detector almost certainly accumulates enough evidence
+to arm and confirm (1 − 0.8⁵⁰ ≈ 100 %). The binding constraint isn't
+frame-level accuracy — it's whether the vehicle is in range long enough,
+which the 150 m / 80 m ranges guarantee. This is the payoff of *temporal*
+fusion over single-frame triggering: it absorbs an unreliable detector. (The
+true cliff is below ~5 % per-tick, far under any real detector.) Reproduce
+with `python -m evaluation.sensitivity`.
+
 #### Adversarial validation — does it stay quiet?
 
 The counterfactual proves the system *helps* when an ambulance is present. It
