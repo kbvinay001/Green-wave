@@ -1,0 +1,200 @@
+{
+  "summary": {
+    "corridor": "shollinganallur_chennai",
+    "signals": 10,
+    "n": 12,
+    "ev_travel_baseline_s": 156.8,
+    "ev_travel_closedloop_s": 162.3,
+    "ev_time_saved_s": -5.52,
+    "ci95": [
+      -11.06,
+      0.01
+    ],
+    "pct_saved": -3.5,
+    "p_value": 0.0502,
+    "cohen_dz": -0.635,
+    "civilian_extra_loss_s": -2.39
+  },
+  "rows": [
+    {
+      "seed": 1,
+      "baseline": {
+        "ev_travel_s": 165.6,
+        "ev_stops": 5,
+        "triggered_at": null,
+        "civ_loss": 117.9
+      },
+      "closedloop": {
+        "ev_travel_s": 173.2,
+        "ev_stops": 6,
+        "triggered_at": 75.7,
+        "civ_loss": 116.4
+      }
+    },
+    {
+      "seed": 2,
+      "baseline": {
+        "ev_travel_s": 143.9,
+        "ev_stops": 4,
+        "triggered_at": null,
+        "civ_loss": 119.1
+      },
+      "closedloop": {
+        "ev_travel_s": 160.7,
+        "ev_stops": 5,
+        "triggered_at": 75.6,
+        "civ_loss": 114.8
+      }
+    },
+    {
+      "seed": 3,
+      "baseline": {
+        "ev_travel_s": 167.7,
+        "ev_stops": 5,
+        "triggered_at": null,
+        "civ_loss": 116.3
+      },
+      "closedloop": {
+        "ev_travel_s": 167.5,
+        "ev_stops": 5,
+        "triggered_at": 75.9,
+        "civ_loss": 115.4
+      }
+    },
+    {
+      "seed": 4,
+      "baseline": {
+        "ev_travel_s": 158.6,
+        "ev_stops": 5,
+        "triggered_at": null,
+        "civ_loss": 117.6
+      },
+      "closedloop": {
+        "ev_travel_s": 170.4,
+        "ev_stops": 6,
+        "triggered_at": 75.8,
+        "civ_loss": 113.0
+      }
+    },
+    {
+      "seed": 5,
+      "baseline": {
+        "ev_travel_s": 155.6,
+        "ev_stops": 5,
+        "triggered_at": null,
+        "civ_loss": 120.2
+      },
+      "closedloop": {
+        "ev_travel_s": 155.5,
+        "ev_stops": 5,
+        "triggered_at": 75.7,
+        "civ_loss": 115.0
+      }
+    },
+    {
+      "seed": 6,
+      "baseline": {
+        "ev_travel_s": 154.4,
+        "ev_stops": 5,
+        "triggered_at": null,
+        "civ_loss": 118.1
+      },
+      "closedloop": {
+        "ev_travel_s": 152.6,
+        "ev_stops": 4,
+        "triggered_at": 75.8,
+        "civ_loss": 117.1
+      }
+    },
+    {
+      "seed": 7,
+      "baseline": {
+        "ev_travel_s": 152.9,
+        "ev_stops": 5,
+        "triggered_at": null,
+        "civ_loss": 119.5
+      },
+      "closedloop": {
+        "ev_travel_s": 154.7,
+        "ev_stops": 4,
+        "triggered_at": 75.7,
+        "civ_loss": 117.2
+      }
+    },
+    {
+      "seed": 8,
+      "baseline": {
+        "ev_travel_s": 158.5,
+        "ev_stops": 5,
+        "triggered_at": null,
+        "civ_loss": 117.5
+      },
+      "closedloop": {
+        "ev_travel_s": 158.6,
+        "ev_stops": 5,
+        "triggered_at": 75.6,
+        "civ_loss": 117.8
+      }
+    },
+    {
+      "seed": 9,
+      "baseline": {
+        "ev_travel_s": 158.8,
+        "ev_stops": 5,
+        "triggered_at": null,
+        "civ_loss": 118.7
+      },
+      "closedloop": {
+        "ev_travel_s": 158.9,
+        "ev_stops": 5,
+        "triggered_at": 75.7,
+        "civ_loss": 115.7
+      }
+    },
+    {
+      "seed": 10,
+      "baseline": {
+        "ev_travel_s": 143.6,
+        "ev_stops": 4,
+        "triggered_at": null,
+        "civ_loss": 116.4
+      },
+      "closedloop": {
+        "ev_travel_s": 170.2,
+        "ev_stops": 5,
+        "triggered_at": 75.6,
+        "civ_loss": 115.5
+      }
+    },
+    {
+      "seed": 11,
+      "baseline": {
+        "ev_travel_s": 167.7,
+        "ev_stops": 5,
+        "triggered_at": null,
+        "civ_loss": 116.4
+      },
+      "closedloop": {
+        "ev_travel_s": 169.7,
+        "ev_stops": 5,
+        "triggered_at": 75.7,
+        "civ_loss": 116.9
+      }
+    },
+    {
+      "seed": 12,
+      "baseline": {
+        "ev_travel_s": 154.1,
+        "ev_stops": 5,
+        "triggered_at": null,
+        "civ_loss": 120.3
+      },
+      "closedloop": {
+        "ev_travel_s": 155.7,
+        "ev_stops": 5,
+        "triggered_at": 75.7,
+        "civ_loss": 114.5
+      }
+    }
+  ]
+}

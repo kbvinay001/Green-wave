@@ -65,6 +65,9 @@ asserted. Full method and figures in the per-phase sections that follow.
 | Better than a naive trigger-on-detection system? | naive false-fires **731×** (641 from car horns); ours **0×** | `evaluation/adversarial.py --compare` |
 | Does it run in real time? | audio **16×**, vision **5.6×**, fusion **~30000×** real-time on a laptop GPU | `evaluation/latency.py` |
 | Was "noisy beats perfect" a real finding? | No — a trigger-timing artifact; honestly reframed as *timing dominates detection accuracy* | controlled @80 m re-run |
+| How does it behave if the detector is worse? | **Flat** — saves 62–64 s from 95 % down to 20 % per-tick hit rate (temporal accumulation absorbs it) | `evaluation/sensitivity.py` |
+| What if the ambulance turns off the corridor? | Self-heals — **every preemption restores** (no stuck greens), wrong route costs +0.16 s | `evaluation/route_uncertainty.py` |
+| Does it generalize to another city? | Code: **yes** (runs unmodified on Shollinganallur, Chennai). Benefit: arterial-spacing-dependent — honest negative on a dense cluster | `evaluation/second_corridor.py` |
 
 ---
 
@@ -337,6 +340,38 @@ fusion over single-frame triggering: it absorbs an unreliable detector. (The
 true cliff is below ~5 % per-tick, far under any real detector.) Reproduce
 with `python -m evaluation.sensitivity`.
 
+#### A second corridor — does it generalize? (an honest boundary)
+
+Every other number comes from one intersection. To test generalization I
+built a **second real network from OpenStreetMap — Shollinganallur, Chennai**
+— with the documented, reproducible pipeline (`osmGet.py` → `netconvert
+--tls.guess` → a shortest-path corridor finder → `randomTrips.py`, all under
+`sim/nets/shollinganallur/`), then pointed the *unchanged*
+`evaluation.counterfactual.simulate()` at it. Generalization has two parts,
+and they came out differently:
+
+- **Infrastructure — yes.** The entire pipeline (real `TemporalFusionEngine`,
+  `SumoController`, synthetic sensors, the green cascade) runs unmodified on a
+  completely different network: 10 signals, 540 background vehicles, a corridor
+  the system has never seen. Zero code changes.
+- **Efficacy — corridor-dependent, and here it did *not* help.** On this
+  corridor the closed-loop system saved **−5.5 s (−3.5 %, *p* ≈ 0.05, n=12)** —
+  i.e. a slight *slowdown*, not a speed-up (civilian delay actually fell
+  −2.4 s).
+
+That negative result is reported, not hidden, because it's informative. The
+Shollinganallur corridor `netconvert` produced is a **dense junction cluster**
+— 10 signals packed into ~570 m, some barely 30–50 m apart — where Benz Circle
+is an arterial with signals 150–800 m apart. The green wave's fixed timings
+(2.5 s all-red clearance per junction, 12 s holds) are tuned for arterial
+spacing; at ~50 m spacing the per-junction ETAs collapse to ~2 s apart, the
+cascade fires almost simultaneously, and the stacked all-red clearances cost
+about as much as the coordination saves. **The method generalizes to
+arterial-class corridors; it needs spacing-adaptive timing for dense clusters**
+— the same demand/spacing-adaptive hold the 2× counterfactual finding pointed
+to (future work). Honest scope beats a cherry-picked second corridor.
+Reproduce with `python -m evaluation.second_corridor`.
+
 #### Route uncertainty — what if the ambulance turns off?
 
 The route predictor assumes the EV follows the mapped corridor. When it
@@ -502,6 +537,9 @@ the plain `--screenshot` flag captures an offline shell).
 | Adversarial / false-preemption | ✅ Complete | 5 attack scenarios × 30 seeds, 0 benign fires; hard CI gate in `tests/test_adversarial.py` |
 | Prior-art comparison | ✅ Complete | vs naive immediate-preemption: naive false-fires 731×, ours 0× — `--compare` |
 | Real-time latency | ✅ Complete | audio 16× / vision 5.6× / fusion ~30000× real-time on RTX 4060 — `evaluation/latency.py` |
+| Detector sensitivity sweep | ✅ Complete | time saved flat 62–64s from 20–95% hit-rate — `evaluation/sensitivity.py` |
+| Route-uncertainty | ✅ Complete | EV leaves corridor: preemptions self-restore, +0.16s cost — `evaluation/route_uncertainty.py` |
+| Second corridor (Shollinganallur) | ✅ Complete | pipeline runs unmodified on a 2nd OSM city; benefit needs arterial spacing — `evaluation/second_corridor.py` |
 | Backend-served dashboard | ✅ Complete | `ui/dist` mounted into FastAPI — one port, one container |
 | docker-compose + free tunnel | ✅ Complete | Single image (CPU torch) + opt-in `cloudflared` quick-tunnel profile |
 
